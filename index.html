@@ -234,6 +234,7 @@ const S = {
   mineBusy:false, salonBusy:false, heat:0.7,
   skySel:null, skyZoom:1, skyPan:{x:0,y:0},
   libSeal:"sealed",
+  hist:[],
 };
 /* ---------------- utils ---------------- */
 const esc = s => String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
@@ -366,41 +367,55 @@ Respond ONLY with JSON, no fences, no preamble:
 }
 function debateContext(n, libraryBlock){
   const src = n.source && n.source.title ? `Source: ${n.source.title}${n.source.author?" — "+n.source.author:""} (footing: ${n.source.footing})` : "Source: none — a loose thought.";
-  const CHARACTER = `THE SALON — HOW A DEBATE IS FOUGHT HERE
+  const author = n.debate.mode==="author";
+
+  const LEARN = `THE SALON — LEARN MODE
+
+The person is here to understand, not to fight. They will ask questions — some large, some embarrassingly small. Treat every one as worth answering well.
+
+${author?`You are an informed reconstruction of ${n.source.author||"the author"}, speaking first-person about your own work and the ideas in it. Explain what you meant, what you were arguing against, what you got wrong, what you still believe. You are generous here, not defensive — they came to learn from you, not to duel.`:`You are a learning partner: someone who knows a great deal and enjoys explaining it. Not a lecturer. Not a search engine.`}
+
+Answer the actual question asked. Go one useful step past it — the thing they'd have asked next — and then stop. Never dump everything you know. Never say "great question." If they're confused, find the specific place the confusion lives and fix that, rather than restating the whole idea more loudly.
+
+If you don't know, say so and say what you do know.
+
+Under 140 words.`;
+
+  const CHARACTER = `THE SALON — DEBATE MODE
 
 You are not a teacher, not an assistant, not a devil's advocate playing a game. You are an opponent who believes what you're saying and intends to win. That belief is what makes this worth the person's evening.
 
-Attack the strongest version of their position, never a weak one you invented to knock down. If their argument has a real weakness, name it precisely and press exactly there — one blade, not five. Scattering objections is what people do when they have none.
+Attack the strongest version of their position, never a weak one you invented. If their argument has a real weakness, name it precisely and press exactly there — one blade, not five. Scattering objections is what people do when they have none.
 
-Take their words seriously enough to quote them back. "You said X — but X requires Y, and Y is false." That is what being heard feels like.
+Quote their words back when you turn them. "You said X — but X requires Y, and Y is false." That is what being heard feels like.
 
-Concede only when an argument actually lands, and when it does, concede cleanly and without sulking — then find the next line of defence. A debater who never yields is a wall, not an opponent, and people learn nothing from walls. A debater who yields to be pleasant is worthless. Earn every inch and give up the inches you lose.
+Concede only when an argument actually lands — then concede cleanly, without sulking, and find the next line of defence. A debater who never yields is a wall, and people learn nothing from walls. A debater who yields to be pleasant is worthless.
 
-Be brief. The sharpest blow is a short one. Two or three sentences that cut beat a paragraph that lectures. Never summarise the exchange. Never say "that's a great point." Never soften a blow with padding.
+Be brief. The sharpest blow is short. Never summarise the exchange. Never say "that's a great point."
 
-You may be dry, sardonic, warm, or cold — whatever the argument calls for. Never cruel, never patronising. The heat comes from the ideas, not from contempt.`;
+Dry, sardonic, warm, or cold — whatever the argument calls for. Never cruel, never patronising. The heat comes from the ideas.`;
 
-  const rules = n.debate.mode==="author"
+  const DEBATE = author
     ? `${CHARACTER}
 
-YOUR SEAT — THE AUTHOR'S CHAIR: You are an informed reconstruction of ${n.source.author||"the author"}, speaking first-person. This is your line and you defend it — from inside your own work, your own life, your own century. You know why you wrote it and what it cost you.
+YOUR SEAT — THE AUTHOR'S CHAIR: You are an informed reconstruction of ${n.source.author||"the author"}, speaking first-person. This is your line and you defend it — from inside your own work, your life, your century.
 
-You never switch sides. Not once, not for anything. The person may take whatever position they like; you hold the text.
+You never switch sides. Not once. The person may take whatever position they like; you hold the text.
 
-Where your own life contradicts your line, admit it and defend the line anyway — the failure of the man is not the failure of the idea, and you may say so. Where history proved you wrong, you may acknowledge it and argue the idea still stands, or stands changed. But you do not abandon it.
+Where your own life contradicts your line, admit it and defend the line anyway — the failure of the man is not the failure of the idea. Where history proved you wrong, you may acknowledge it and argue the idea stands, or stands changed. But you never abandon it.
 
 If your knowledge of this specific text is thin, say so once, honestly, and argue from the ideas you did hold. Never invent a biography you don't have.
 
 Under 130 words.`
     : `${CHARACTER}
 
-YOUR SEAT — THE OPPOSITION: The person's current position is: "${n.debate.userSide}". You argue the opposite of that position. Always. That is your only loyalty.
+YOUR SEAT — THE OPPOSITION: Read the person's position from what they actually say${n.debate.userSide?` — their opening move was: "${String(n.debate.userSide).slice(0,300)}"`:""}. Whatever position they are holding right now, you argue the opposite of it. Always. That is your only loyalty.
 
-If they change sides mid-argument, you change with them — you are always across the table, never beside them. They cannot escape a losing position by switching; switching only hands them the harder job of defending what you were just defending. Never remark on this. Simply turn and take the other side.
+If they shift their ground mid-argument, you shift with them — you are always across the table, never beside them. Switching sides never buys them peace; it only hands them the harder job of defending what you were just defending. Never remark on this. Simply turn and take the other side.
 
 Under 120 words.`;
 
-  return `You are the debating voice inside "The Estate".
+  return `You are the voice inside "The Estate", speaking in the salon.
 
 ${LAW}
 
@@ -409,7 +424,7 @@ ${src}
 ${n.clarify?`The house's earlier reading of it: ${n.clarify}`:""}
 ${libraryBlock||""}
 
-${rules}`;
+${n.debate.learn ? LEARN : DEBATE}`;
 }
 function rungPrompt(n){
   const strata = (n.descent.rungs||[]).map((r,i)=>`${i+1}. ${r.text}${r.sealedWord?` (sealed by the user as: "${r.sealedWord}")`:""}`).join("\n");
@@ -456,7 +471,8 @@ async function runClarify(n, imageB64, mime){
     n.clarify = r.clarify||"";
     n.footnote = r.footnote||"";
     n.footing = n.source ? n.source.footing : null;
-    await saveNote(n);
+   await saveNote(n);
+    harvestTags(n);
     S.note = n; setRoom("obs"); S.loading=false; render(); return;
   }catch(e){ S.error = friendly(e); }
   S.loading=false; render();
@@ -483,18 +499,25 @@ async function captureAction(action){
 function enterSalon(n){
   if(!n.debate){
     const authorMode = !!(n.source && n.source.author && n.source.footing!=="unknown");
-    n.debate = { mode: authorMode?"author":"general",
-      userSide: authorMode? "challenging the text" : `against the line: "${String(n.text).slice(0,80)}"`,
-      sidePro:false, transcript:[], crossings:0 };
+    n.debate = { mode: authorMode?"author":"general", learn:false,
+      userSide:"", sidePro:false, transcript:[], crossings:0 };
   }
+  if(n.debate.learn===undefined) n.debate.learn=false;
   S.note=n; setRoom("salon"); S.heat=.7; render();
+}
+function setSalonMode(learn){
+  const n=S.note; if(!n||!n.debate||n.debate.learn===learn) return;
+  n.debate.learn=learn;
+  saveNote(n); render();
+}
 }
 async function sendSalon(){
   const inp = document.getElementById("salonInput");
   const text=(inp?inp.value:"").trim();
   if(!text || S.salonBusy) return;
   const n=S.note;
-  n.debate.transcript.push({role:"me", content:text, side:n.debate.sidePro?"for":"against"});
+  n.debate.transcript.push({role:"me", content:text});
+  if(!n.debate.learn && !n.debate.userSide) n.debate.userSide = text;
   if(inp) inp.value="";
   S.salonBusy=true;
   S.heat=Math.min(1, .65 + n.debate.transcript.filter(m=>m.role!=="cross").length*.03 + Math.min(text.length/600,.15));
@@ -508,10 +531,7 @@ async function sendSalon(){
       ...prior.map(m=>({role:m.role==="me"?"user":"assistant",content:m.content}))];
     const raw = await api(text, 700, history);
     n.debate.transcript.push({role:"them", content:raw});
-    if(n.debate.mode==="general"){
-      const sides = new Set(n.debate.transcript.filter(m=>m.role==="me").map(m=>m.side));
-      if(sides.size>1 && !n.bothSides){ n.bothSides=true; toast("◐ both sides — The Estate's highest mark"); }
-    }
+    
     await saveNote(n);
   }catch(e){
     n.debate.transcript.push({role:"them", content:"(the fire dipped — say that again)"});
@@ -519,15 +539,7 @@ async function sendSalon(){
   }
   S.salonBusy=false; render();
 }
-function flipSide(pro){
-  const n=S.note;
-  if(!n||!n.debate||n.debate.mode!=="general" || n.debate.sidePro===pro) return;
-  n.debate.sidePro=pro;
-  n.debate.userSide = pro ? `for the line: "${String(n.text).slice(0,80)}"` : `against the line: "${String(n.text).slice(0,80)}"`;
-  n.debate.transcript.push({role:"cross", content:"— you cross the floor —"});
-  n.debate.crossings++;
-  saveNote(n); render();
-}
+
 async function enterMine(n){
   if(!n.descent) n.descent={rungs:[],struck:false,closing:""};
   S.note=n; setRoom("mine");
@@ -584,7 +596,8 @@ async function harvestTags(n){
   }catch(e){}
 }
 /* ---------------- navigation ---------------- */
-function setRoom(v){
+function setRoom(v, noPush){
+  if(!noPush && S.view && S.view!==v) S.hist.push({view:S.view, noteId:S.note?S.note.id:null, libTab:S.libTab, libSeal:S.libSeal});
   S.view=v; S.menuOpen=false;
   if(v==="mine" && S.note && S.note.descent){ document.body.className="room-mine d"+Math.min(S.note.descent.rungs.length,3); }
   else{
@@ -593,7 +606,16 @@ function setRoom(v){
   }
   render();
 }
-function goHall(){ S.note=null; S.search=null; S.error=""; setRoom("hall"); }
+function goBack(){
+  const h=S.hist.pop();
+  if(!h){ S.hist=[]; S.note=null; setRoom("hall", true); return; }
+  if(h.noteId){ const n=S.notes.find(x=>x.id===h.noteId); S.note = n||null; if(!n && (h.view==="obs"||h.view==="salon"||h.view==="mine")){ return goBack(); } }
+  else S.note=null;
+  S.libTab=h.libTab||"notes"; S.libSeal=h.libSeal||"sealed"; S.search=null; S.error="";
+  setRoom(h.view, true);
+}
+}
+function goHall(){ S.note=null; S.search=null; S.error=""; S.hist=[]; setRoom("hall", true); }
 function goLib(){ S.search=null; S.libTab="notes"; S.error=""; setRoom("lib"); }
 function openNote(id){
   const n=S.notes.find(x=>x.id===id); if(!n) return;
@@ -673,6 +695,7 @@ let welcomeLine=null;
 
 function topBar(name, mid){
   return `<div class="topRow">
+    ${S.hist.length?`<button onclick="goBack()" style="background:none;border:none;color:rgba(201,169,106,.8);font-size:15px;line-height:1;cursor:pointer;padding:4px 10px 4px 0;margin-left:-4px">←</button>`:""}
     <span class="roomName" onclick="goHall()">${name}</span>
     <span class="mid">${mid}</span>
     <button class="menuBtn" onclick="toggleMenu()">☰</button>
@@ -754,6 +777,21 @@ async function doDelete(id){
   try{ await new Promise(res=>{ const t=idb.db.transaction("notes","readwrite"); t.objectStore("notes").delete(id); t.oncomplete=res; t.onerror=res; }); }catch(e){}
   closeModal(); toast("burned"); goLib();
 }
+
+  /* the mine's atmosphere follows where you are, not how deep you've been */
+function mineScrollWatch(){
+  if(S.view!=="mine") return;
+  const rows=[...document.querySelectorAll("[data-depth]")];
+  if(!rows.length) return;
+  const mid=window.innerHeight*0.42;
+  let best=rows[0], bestD=1e9;
+  rows.forEach(r=>{ const b=r.getBoundingClientRect(); const d=Math.abs((b.top+b.height/2)-mid); if(d<bestD){bestD=d;best=r;} });
+  const depth=Math.min(parseInt(best.dataset.depth||"0",10),3);
+  document.body.className="room-mine d"+depth;
+  const g=document.querySelector(".mineGlow");
+  if(g) g.style.height=(34+depth*7)+"vh";
+}
+window.addEventListener("scroll", mineScrollWatch, {passive:true});
   
 function render(){
   document.getElementById("fx").innerHTML = fxFor(S.view);
@@ -845,27 +883,27 @@ function renderSalon(){
     seen++;
     const heat="heat"+Math.min(Math.max(spoken-seen,0),4);
     return `<div class="turn ${m.role==="me"?"me":"them"} ${heat}">
-      <div class="speaker">${m.role==="me"?("You"+(m.side&&!author?" · "+m.side:"")):(author?esc(n.source.author||"The author"):"The Opposition")} <span class="ln"></span></div>
+      <div class="speaker">${m.role==="me"?"You":(author?esc(n.source.author||"The author"):(n.debate.learn?"Learning partner":"Debate partner"))} <span class="ln"></span></div>
       <p>${esc(m.content)}</p></div>`;
   }).join("");
   return topBar("The Salon","· debate ·")+`
   <div class="salon" style="display:flex;flex-direction:column;flex:1">
     <div class="salonHead">
-      <div class="who">${author?esc((n.source.author||"THE AUTHOR").toUpperCase()):"THE OPPOSITION"}</div>
-      <div class="sub">${author?"reconstruction · defends the text":"always the other side of you"}</div>
+      <div class="who">${author?esc((n.source.author||"THE AUTHOR").toUpperCase()):(n.debate.learn?"LEARNING PARTNER":"DEBATE PARTNER")}</div>
+      <div class="sub">pour a drink ·  what's on your mind?</div>
       <div class="rule"></div>
     </div>
-    ${author?"":`<div class="sideToggle">
-      <button class="${!n.debate.sidePro?"on":""}" onclick="flipSide(false)">I'm against it</button>
-      <button class="${n.debate.sidePro?"on":""}" onclick="flipSide(true)">I'm for it</button>
-    </div>`}
+   <div class="libToggle" style="margin:12px auto 0">
+      <button class="${!n.debate.learn?"on":""}" onclick="setSalonMode(false)">Debate</button>
+      <button class="${n.debate.learn?"on":""}" onclick="setSalonMode(true)">Learn</button>
+    </div>
     <div class="transcript">
-      ${T.length===0?`<p class="emptyRoom">state your position — the chair is taken, the fire is lit</p>`:""}
+     ${T.length===0?`<p class="emptyRoom">${n.debate.learn?"ask anything — no question is too small here":"say what you think — the fire is lit, the chair is taken"}</p>`:""}
       ${rows}
-      ${S.salonBusy?`<div class="turn them heat0"><div class="speaker">${author?esc(n.source.author||"The author"):"The Opposition"} <span class="ln"></span></div><p style="opacity:.55">…</p></div>`:""}
+      ${S.salonBusy?`<div class="turn them heat0"><div class="speaker">${author?esc(n.source.author||"The author"):(n.debate.learn?"Learning partner":"Debate partner")} <span class="ln"></span></div><p style="opacity:.55">…</p></div>`:""}
     </div>
     <div class="salonInputRow">
-      <textarea id="salonInput" class="salonInput" rows="1" placeholder="${T.length?"hold your ground…":"state your position…"}"
+      <textarea id="salonInput" class="salonInput" rows="1" placeholder="${n.debate.learn?"ask…":(T.length?"hold your ground…":"say what you think…")}"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendSalon();}"></textarea>
       <button class="sendBtn" onclick="sendSalon()">Send</button>
     </div>
@@ -884,18 +922,18 @@ function renderMine(){
   <div class="mine mineWrap" style="display:flex;flex-direction:column;flex:1">
     <div class="handoff">you have left the source — descending the idea itself</div>
     <div class="mineViewport">
-      <div class="stratum past">
+      <div class="stratum past" data-depth="0">
         <div class="lv"><span>Surface</span><span>0</span></div>
         <div class="tx">${esc(n.text)}</div>
         ${n.sealedWord?`<div class="inkw">${esc(n.sealedWord)}</div>`:""}
       </div>
       ${d.rungs.map((r,i)=>`
-        <div class="stratum ${i===d.rungs.length-1&&!d.struck?"current":"past"}">
+        <div class="stratum ${i===d.rungs.length-1&&!d.struck?"current":"past"}" data-depth="${Math.min(i+1,3)}">
           <div class="lv"><span>Another floor deeper</span><span>–${ROMAN[i]||i+1}</span></div>
           <div class="tx">${esc(r.text)}</div>
           ${r.sealedWord?`<div class="inkw">${esc(r.sealedWord)}</div>`:""}
         </div>`).join("")}
-      ${d.struck?`<div class="goldSeam"><div class="lv">You've struck gold</div><div class="tx">${esc(d.closing)}</div></div>`:""}
+      ${d.struck?`<div class="goldSeam" data-depth="3"><div class="lv">You've struck gold</div><div class="tx">${esc(d.closing)}</div></div>`:""}
     </div>
     ${S.mineBusy?`<p class="loadingLine">You are descending. Deeper mines hold rarer gems…</p>`:""}
     ${S.error?`<p class="err">${esc(S.error)}</p>`:""}
