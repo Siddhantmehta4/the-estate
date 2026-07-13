@@ -130,6 +130,72 @@ button.act{font-family:var(--sans)}
 .sendBtn{background:none;border:none;color:var(--amber);font-size:10px;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;padding:10px 4px;font-family:var(--sans)}
 .salonFoot{display:flex;justify-content:center;gap:8px;margin-top:10px}
 /* ---------------- MINE ---------------- */
+
+ /* ================= THE SALON — WHISKY & WINE ================= */
+.turn p{ transition: color 1.4s ease, text-shadow 1.4s ease; }
+
+body.room-salon::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:1;
+  background:radial-gradient(120% 120% at 50% 46%, transparent 58%, rgba(0,0,0,.26) 100%);
+}
+body.room-salon.wine::after{ background:radial-gradient(120% 120% at 50% 46%, transparent 60%, rgba(10,6,10,.3) 100%); }
+
+/* ---- WHISKY ---- */
+body.room-salon{
+  background:
+    radial-gradient(120% 70% at 50% 118%, rgba(255,150,60,.16) 0%, transparent 55%),
+    radial-gradient(80% 50% at 30% 100%, rgba(255,120,40,.10) 0%, transparent 60%),
+    radial-gradient(80% 50% at 74% 104%, rgba(255,170,80,.08) 0%, transparent 62%),
+    linear-gradient(180deg,#1E0E08 0%, #24100A 38%, #2C130C 68%, #1A0C07 100%);
+  background-size:100% 100%, 140% 140%, 140% 140%, 100% 100%;
+  animation: whiskyBreathe 7s ease-in-out infinite;
+}
+@keyframes whiskyBreathe{ 0%,100%{background-position:50% 100%, 22% 100%, 78% 100%, 0 0;} 50%{background-position:50% 96%, 30% 96%, 70% 108%, 0 0;} }
+.flick{ position:fixed; bottom:-10%; width:38%; height:60%; pointer-events:none; z-index:0; filter:blur(26px); opacity:.5;
+  background:radial-gradient(closest-side, rgba(255,150,55,.5), rgba(255,120,40,.18) 55%, transparent 78%); }
+.flick.f1{ left:-6%; animation: flick1 4.6s ease-in-out infinite; }
+.flick.f2{ left:34%; width:44%; opacity:.4; animation: flick2 6.1s ease-in-out infinite .6s; }
+.flick.f3{ right:-8%; width:36%; animation: flick3 5.3s ease-in-out infinite 1.4s; }
+@keyframes flick1{ 0%,100%{transform:translateY(0) scaleY(1) rotate(-2deg);opacity:.46} 50%{transform:translateY(-3%) scaleY(1.12) rotate(1deg);opacity:.62} }
+@keyframes flick2{ 0%,100%{transform:translateY(0) scaleY(1) rotate(1deg);opacity:.34} 45%{transform:translateY(-4%) scaleY(1.08) rotate(-2deg);opacity:.5} }
+@keyframes flick3{ 0%,100%{transform:translateY(0) scaleY(1) rotate(2deg);opacity:.4} 55%{transform:translateY(-2%) scaleY(1.14) rotate(-1deg);opacity:.58} }
+.salon:not(.wine) .turn:last-child p{ animation: emberText 3.4s ease-in-out infinite; }
+@keyframes emberText{ 0%,100%{text-shadow:0 0 0 rgba(255,150,60,0);} 50%{text-shadow:0 0 14px rgba(255,150,60,.28);} }
+.salon:not(.wine) .salonHead .rule{ background:linear-gradient(90deg,transparent, rgba(255,160,70,.75), transparent); box-shadow:0 0 12px rgba(255,140,60,.35); }
+
+/* ---- WINE ---- */
+body.room-salon.wine{
+  background:
+    linear-gradient(115deg, transparent 30%, rgba(255,255,255,.05) 46%, transparent 60%),
+    radial-gradient(70% 40% at 50% 112%, rgba(70,95,130,.14) 0%, transparent 65%),
+    linear-gradient(180deg,#2A0E18 0%, #35121F 40%, #401628 70%, #2A0F1A 100%);
+  background-size:220% 220%, 100% 100%, 100% 100%;
+  animation: satinSweep 12s ease-in-out infinite;
+}
+@keyframes satinSweep{ 0%{background-position:0% 30%,50% 100%,0 0;} 50%{background-position:100% 70%,50% 94%,0 0;} 100%{background-position:0% 30%,50% 100%,0 0;} }
+.hearthGlow.wine{
+  background:
+    radial-gradient(65% 90% at 50% 112%, rgba(122,26,50,calc(.4*var(--heat))) 0%, rgba(80,20,38,calc(.18*var(--heat))) 46%, transparent 74%),
+    radial-gradient(50% 30% at 22% 100%, rgba(90,115,150,calc(.14*var(--heat))) 0%, transparent 70%),
+    radial-gradient(50% 30% at 78% 100%, rgba(90,115,150,calc(.1*var(--heat))) 0%, transparent 70%);
+  animation: hearthB 6.5s ease-in-out infinite;
+}
+.ripple{ position:absolute; left:50%; bottom:6px; width:10px; height:10px; margin-left:-5px; border-radius:50%;
+  border:1px solid rgba(196,150,170,.5); pointer-events:none; animation: rippleOut 2.2s ease-out forwards; }
+@keyframes rippleOut{ 0%{width:10px;height:10px;margin-left:-5px;opacity:.7} 100%{width:160px;height:160px;margin-left:-80px;opacity:0} }
+.salon.wine .salonHead .rule{ background:linear-gradient(90deg,transparent, rgba(210,150,165,.65), transparent); box-shadow:0 0 10px rgba(180,110,130,.3); }
+.salon.wine .heat0 p{color:#EFC6CE}.salon.wine .heat1 p{color:#DDACB6}.salon.wine .heat2 p{color:#C3919C}.salon.wine .heat3 p{color:#A47986}.salon.wine .heat4 p{color:#836470}
+.salon.wine .turn.me .speaker{color:#E6B0BC}.salon.wine .turn.them .speaker{color:#B98FA0}
+.salon.wine .turn:last-child p{
+  background:linear-gradient(100deg, #EFC6CE 30%, #FBEFF2 50%, #EFC6CE 70%);
+  background-size:220% 100%; -webkit-background-clip:text; background-clip:text;
+  color:transparent; -webkit-text-fill-color:transparent;
+  animation: satinText 4.5s ease-in-out infinite;
+}
+@keyframes satinText{ 0%{background-position:0% 0} 50%{background-position:100% 0} 100%{background-position:0% 0} }
+.salon.wine .salonInput{border-bottom-color:rgba(210,150,165,.5)}
+.salon.wine .salonInput::placeholder{color:rgba(230,196,206,.4)}
+.salon.wine .sendBtn{color:#D9A3B2}
 .colFix{position:fixed;top:0;bottom:0;width:24px;z-index:1;pointer-events:none;
   background:repeating-linear-gradient(90deg, rgba(255,255,255,.055) 0 2px, rgba(0,0,0,.16) 2px 6px, rgba(255,255,255,.02) 6px 8px)}
 .colFix.l{left:0}.colFix.r{right:0}
@@ -741,7 +807,12 @@ function fxFor(view){
     <div class="obsStar" style="width:1.5px;height:1.5px;top:20%;left:70%"></div>
     <div class="obsStar twk2" style="width:2.5px;height:2.5px;top:30%;left:26%;box-shadow:0 0 8px #C9D8DC"></div>
     <div class="obsStar" style="width:1px;height:1px;top:52%;left:82%"></div>`;
-  if(view==="salon") return `<div class="hearthGlow" style="--heat:${S.heat}"></div>`;
+  if(view==="salon"){
+    const wine = !!(S.note && S.note.debate && S.note.debate.learn);
+    return wine
+      ? `<div class="hearthGlow wine" style="--heat:${S.heat}"></div>`
+      : `<div class="hearthGlow" style="--heat:${S.heat}"></div><div class="flick f1"></div><div class="flick f2"></div><div class="flick f3"></div>`;
+  }
   if(view==="mine"){
     const depth = (S.note&&S.note.descent)?S.note.descent.rungs.length:0;
     return `
@@ -792,6 +863,7 @@ function mineScrollWatch(){
 window.addEventListener("scroll", mineScrollWatch, {passive:true});
   
 function render(){
+  document.body.classList.toggle("wine", !!(S.note && S.note.debate && S.note.debate.learn));
   document.getElementById("fx").innerHTML = fxFor(S.view);
   const app=document.getElementById("app");
   let html="";
@@ -822,7 +894,7 @@ function renderHall(){
     </div>
     <div class="actions">
       <button class="act" onclick="captureAction('resolve')">Resolve</button>
-      <button class="act primary" onclick="captureAction('debate')">Debate</button>
+      <button class="act primary" onclick="captureAction('debate')">Engage</button>
       <button class="act" onclick="captureAction('save')">Save</button>
     </div>
     ${S.loading?`<p class="loadingLine">Your idea will be resolved in the observatory…</p>`:""}
@@ -885,23 +957,23 @@ function renderSalon(){
       <p>${esc(m.content)}</p></div>`;
   }).join("");
   return topBar("The Salon","· debate ·")+`
-  <div class="salon" style="display:flex;flex-direction:column;flex:1">
-    <div class="salonHead">
-      <div class="who">${author?esc((n.source.author||"THE AUTHOR").toUpperCase()):(n.debate.learn?"LEARNING PARTNER":"DEBATE PARTNER")}</div>
-      <div class="sub">pour a drink ·  what's on your mind?</div>
+<div class="salon${n.debate.learn?" wine":""}" style="display:flex;flex-direction:column;flex:1">
+<div class="salonHead">
+      <div class="who">What are we drinking tonight?</div>
       <div class="rule"></div>
     </div>
-   <div class="libToggle" style="margin:12px auto 0">
-      <button class="${!n.debate.learn?"on":""}" onclick="setSalonMode(false)">Debate</button>
-      <button class="${n.debate.learn?"on":""}" onclick="setSalonMode(true)">Learn</button>
+    <div class="libToggle" style="margin:12px auto 0">
+      <button class="${!n.debate.learn?"on":""}" onclick="setSalonMode(false)">Whisky</button>
+      <button class="${n.debate.learn?"on":""}" onclick="setSalonMode(true)">Wine</button>
     </div>
     <div class="transcript">
-     ${T.length===0?`<p class="emptyRoom">${n.debate.learn?"ask anything — no question is too small here":"say what you think — the fire is lit, the chair is taken"}</p>`:""}
+     ${T.length===0?`<p class="emptyRoom">${n.debate.learn?"ask anything — no question is too small here":"speak your mind — the fire is lit, and so is the cigar"}</p>`:""}
       ${rows}
       ${S.salonBusy?`<div class="turn them heat0"><div class="speaker">${author?esc(n.source.author||"The author"):(n.debate.learn?"Learning partner":"Debate partner")} <span class="ln"></span></div><p style="opacity:.55">…</p></div>`:""}
     </div>
-    <div class="salonInputRow">
-      <textarea id="salonInput" class="salonInput" rows="1" placeholder="${n.debate.learn?"ask…":(T.length?"hold your ground…":"say what you think…")}"
+    <div class="salonInputRow" style="position:relative">
+      ${n.debate.learn?`<div class="ripple"></div>`:""}
+      <textarea id="salonInput" class="salonInput" rows="1" placeholder="${n.debate.learn?"What is it you wish to understand… ":"Start the debate… Fire away.."}"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendSalon();}"></textarea>
       <button class="sendBtn" onclick="sendSalon()">Send</button>
     </div>
