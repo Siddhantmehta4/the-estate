@@ -442,12 +442,12 @@ async function runClarify(n, imageB64, mime){
   try{
     let r;
     if(imageB64){
-     const raw = await api([{type:"image",source:{type:"base64",media_type:mime,data:imageB64}},{type:"text",text:clarifyImagePrompt()}], 1400);
-      r = parsejson(raw);
+      const strict = clarifyImagePrompt() + "\n\nCRITICAL: Respond with ONLY the raw JSON object. Begin with { and end with }. No preamble, no fences.";
+      const raw = await api([{type:"image",source:{type:"base64",media_type:mime,data:imageB64}},{type:"text",text:strict}], 1600);
+      r = parseJSON(raw);
     } else {
-     r = await apiJSON(clarifyPrompt(n.text, relevantSealed(n)), 1600);
+      r = await apiJSON(clarifyPrompt(n.text, relevantSealed(n)), 1600);
     }
-    
     if(r.transcription) n.text = String(r.transcription);
     n.source = (r.source && r.source.title) ? r.source : null;
     n.looksSourced = !!r.looksSourced;
@@ -764,7 +764,7 @@ function renderHall(){
       <button class="act primary" onclick="captureAction('debate')">Debate</button>
       <button class="act" onclick="captureAction('save')">Save</button>
     </div>
-    ${S.loading?`<p class="loadingLine">Your questions will be answered in <i>The Observatory</i>…</p>`:""}
+    ${S.loading?`<p class="loadingLine">Your idea will be resolved in the observatory…</p>`:""}
     ${S.error?`<p class="err">${esc(S.error)}</p>`:""}
     <div class="hallFoot">
       <button class="ghost" onclick="openKeyModal()">⚿ the key</button>
