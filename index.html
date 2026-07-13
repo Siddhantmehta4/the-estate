@@ -233,6 +233,7 @@ const S = {
   menuOpen:false, lastWelcome:localStorage.getItem("estate-welcome")||"",
   mineBusy:false, salonBusy:false, heat:0.7,
   skySel:null, skyZoom:1, skyPan:{x:0,y:0},
+  libSeal:"sealed",
 };
 /* ---------------- utils ---------------- */
 const esc = s => String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
@@ -731,6 +732,29 @@ function fxFor(view){
   if(view==="sky") return `<div class="roofSil"><div class="gable"></div><div class="house"></div><div class="chimney"></div><div class="window"></div></div>`;
   return "";
 }
+
+function askDelete(id){
+  const n=S.notes.find(x=>x.id===id); if(!n) return;
+  document.getElementById("modalMount").innerHTML=`
+  <div class="modal" onclick="if(event.target===this)closeModal()">
+    <div class="modalCard">
+      <h3>Burn this page?</h3>
+      <p>“${esc(String(n.text).slice(0,90))}${String(n.text).length>90?"…":""}”<br><br>Gone from the library, the sky, and every future descent. There is no ash to sift.</p>
+      <div class="modalRow">
+        <button class="chipBtn quiet" onclick="closeModal()">Keep it</button>
+        <button class="chipBtn" onclick="doDelete('${id}')">Burn it</button>
+      </div>
+    </div>
+  </div>`;
+}
+async function doDelete(id){
+  S.notes = S.notes.filter(x=>x.id!==id);
+  if(S.note && S.note.id===id) S.note=null;
+  if(S.skySel===id) S.skySel=null;
+  try{ await new Promise(res=>{ const t=idb.db.transaction("notes","readwrite"); t.objectStore("notes").delete(id); t.oncomplete=res; t.onerror=res; }); }catch(e){}
+  closeModal(); toast("burned"); goLib();
+}
+  
 function render(){
   document.getElementById("fx").innerHTML = fxFor(S.view);
   const app=document.getElementById("app");
@@ -793,6 +817,7 @@ function renderObservatory(){
       <button class="act" onclick="openSeal()">Seal &amp; Save</button>
     </div>
     ${footing?`<div class="obsFooting"><i></i> footing · ${esc(footing)}</div>`:""}
+    <div style="text-align:center;margin-top:14px"><button class="ghost" style="color:#6E5F55" onclick="askDelete('${n.id}')">burn this page</button></div>
   </div>`;
 }
 async function reResolve(){ if(S.note) await runClarify(S.note); }
@@ -872,7 +897,7 @@ function renderMine(){
         </div>`).join("")}
       ${d.struck?`<div class="goldSeam"><div class="lv">You've struck gold</div><div class="tx">${esc(d.closing)}</div></div>`:""}
     </div>
-    ${S.mineBusy?`<p class="loadingLine">the floor is opening. You can find Gems in this Mine…</p>`:""}
+    ${S.mineBusy?`<p class="loadingLine">You are descending. Deeper mines hold rarer gems…</p>`:""}
     ${S.error?`<p class="err">${esc(S.error)}</p>`:""}
     <div class="actions two" style="margin-top:auto">
       ${d.struck?`<button class="act" onclick="setRoom('obs')">Back to the chart</button>`:`<button class="act" onclick="digDeeper()" ${S.mineBusy?"disabled":""}>Dig deeper</button>`}
@@ -912,8 +937,16 @@ function renderLibrary(unresolvedOnly){
       notes.length? notes.map(paper).join("") : `<p class="emptyRoom">nothing waiting — every page has had its evening</p>`
     ) : S.libTab==="notes" ? `
       ${notes.length===0?`<p class="emptyRoom">the library is empty —<br>bring it one for the books</p>`:""}
-      ${sealed.length?`<div class="shelfLabel">Sealed</div>`+sealed.map(paper).join(""):""}
-      ${unsealed.length?`<div class="shelfLabel">Unsealed</div>`+unsealed.map(paper).join(""):""}
+      <button onclick="S.libSeal = S.libSeal==='sealed'?'unsealed':'sealed'; render()"
+        style="display:flex;align-items:center;gap:7px;background:none;border:none;cursor:pointer;
+               font-family:var(--sans);font-size:9.5px;letter-spacing:.3em;text-transform:uppercase;
+               color:#C9A96A;margin:14px 4px 12px;padding:6px 0">
+        ${S.libSeal==="sealed"?"Sealed":"Unsealed"}
+        <span style="font-size:11px;opacity:.75">⇄</span>
+      </button>
+      ${(S.libSeal==="sealed"?sealed:unsealed).length
+        ? (S.libSeal==="sealed"?sealed:unsealed).map(paper).join("")
+        : `<p class="emptyRoom">${S.libSeal==="sealed"?"nothing sealed yet —<br>the ink is waiting":"nothing unsealed —<br>the house is caught up"}</p>`}
     ` : `
       ${srcCache.length===0&&!looseCount?`<p class="emptyRoom">no sources yet — they arrive with the notes</p>`:""}
       ${srcCache.map((s,i)=>`
@@ -979,13 +1012,21 @@ function renderSky(){
   const near = new Set();
   if(sel) E.forEach(e=>{ if(e.a===selI) near.add(e.b); if(e.b===selI) near.add(e.a); });
 
+ // greedy collision avoidance: try slots around the star, take the first that's free
+  const taken=[];
+  const free=(x,y,w)=>!taken.some(t=>Math.abs(t.x-x)<(t.w+w)/2+4 && Math.abs(t.y-y)<11);
   const label = (n,i)=>{
-    const showAll = !sel && notes.length<=8;
-    const show = showAll || (sel && (i===selI || near.has(i)));
-    if(!show) return "";
-    const t=String(n.sealedWord||n.text).slice(0,18);
-    const dy = (i%2===0) ? -11 : 17;   // stagger above/below to break overlap
-    return `<text x="${P[i].x}" y="${P[i].y+dy}" text-anchor="middle" style="font-size:8px;letter-spacing:.08em;fill:${n.sealedWord?"#E7CE96":"#8892A6"};text-transform:uppercase;paint-order:stroke;stroke:#0B0E1A;stroke-width:3px">${esc(t)}${String(n.sealedWord||n.text).length>18?"…":""}</text>`;
+    const t=String(n.sealedWord||n.text).slice(0,16);
+    const txt=esc(t)+(String(n.sealedWord||n.text).length>16?"…":"");
+    const w=t.length*4.6;
+    const slots=[[0,-11],[0,17],[0,-19],[0,25],[w/2+8,3],[-w/2-8,3]];
+    for(const [dx,dy] of slots){
+      const x=P[i].x+dx, y=P[i].y+dy;
+      if(free(x,y,w)){ taken.push({x,y,w});
+        return `<text x="${x}" y="${y}" text-anchor="middle" style="font-size:7.5px;letter-spacing:.06em;fill:${n.sealedWord?"#E7CE96":"#8892A6"};text-transform:uppercase;paint-order:stroke;stroke:#0B0E1A;stroke-width:3px">${txt}</text>`;
+      }
+    }
+    return ""; // genuinely no room — zoom in to read it
   };
 
   return topBar("The Night Sky","· connections ·")+`
