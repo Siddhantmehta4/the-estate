@@ -990,6 +990,20 @@ function mineScrollWatch(){
   if(g) g.style.height=(34+depth*7)+"vh";
 }
 window.addEventListener("scroll", mineScrollWatch, {passive:true});
+
+/* one-time: tag anything that came in before tagging existed */
+async function backfillTags(){
+  if(!S.key) return;
+  const orphans = S.notes.filter(n=>!n.tags || !n.tags.length);
+  if(!orphans.length){ toast("nothing to catch up on"); return; }
+  toast("tagging "+orphans.length+" old note"+(orphans.length>1?"s":"")+"…");
+  for(const n of orphans){
+    try{ await harvestTags(n); }catch(e){}
+  }
+  toast("the sky is caught up");
+  render();
+}
+
   
 function render(){
   document.body.classList.toggle("wine", !!(S.note && S.note.debate && S.note.debate.learn));
@@ -1097,7 +1111,7 @@ function renderSalon(){
       <button class="${n.debate.learn?"on":""}" onclick="setSalonMode(true)">🍷</button>
     </div>
     <div class="transcript">
-      ${T.length<3?`<div class="salonNote ${n.debate.learn?"wineFade":"smokeFade"}">“${esc(n.text)}”</div>`:""}
+      ${T.filter(m=>m.role==="me").length<3?`<div class="salonNote ${n.debate.learn?"wineFade":"smokeFade"}">“${esc(n.text)}”</div>`:""}
       ${T.length===0?`<p class="emptyRoom">${n.debate.learn?"ask anything… no question is too small here":"Start the debate… Fire away… "}</p>`:""}
       ${rows}
       ${S.salonBusy?`<div class="turn them heat0"><div class="speaker">${author?esc(n.source.author||"The author"):(n.debate.learn?"Learning partner":"Debate partner")} <span class="ln"></span></div><p style="opacity:.55">…</p></div>`:""}
@@ -1197,6 +1211,7 @@ function renderLibrary(unresolvedOnly){
       ${looseCount?`<div class="srcRow"><div class="t"><div class="name">Loose notes</div><div class="meta">${looseCount} note${looseCount>1?"s":""} · no fixed address</div></div></div>`:""}
     `}
     <div class="libFoot">
+      <button class="ghost" onclick="backfillTags()">Catch up the sky</button>
       <button class="ghost" onclick="exportBackup()">Export backup</button>
       <button class="ghost" onclick="document.getElementById('importInput').click()">Import</button>
       <button class="ghost" onclick="openKeyModal()">⚿ key</button>
@@ -1216,12 +1231,17 @@ function renderSky(){
   const W=400,H=640;
   const idx = new Map(notes.map((n,i)=>[n.id,i]));
 
-  // edges from shared tags
+ // edges from shared tags AND shared substance — sealed or not
+  const words = notes.map(n=>keyWords(String(n.text)+" "+(n.sealedWord||"")+" "+(n.clarify||"")));
   const E=[];
   for(let i=0;i<notes.length;i++) for(let j=i+1;j<notes.length;j++){
-    const A=notes[i].tags||[],B=notes[j].tags||[];
-    const shared=A.filter(t=>B.includes(t)).length;
-    if(shared) E.push({a:i,b:j,w:shared,tension:!!(notes[i].bothSides||notes[j].bothSides)});
+    const A=(notes[i].tags||[]).map(t=>String(t).toLowerCase());
+    const B=(notes[j].tags||[]).map(t=>String(t).toLowerCase());
+    const tagHits = A.filter(t=>B.includes(t)).length;
+    let wordHits = 0;
+    words[i].forEach(w=>{ if(words[j].has(w)) wordHits++; });
+    const score = tagHits*3 + wordHits;
+    if(score >= 3) E.push({a:i,b:j,w:Math.min(Math.ceil(score/3),3),tension:!!(notes[i].bothSides||notes[j].bothSides)});
   }
   // force-directed relaxation — connected notes cluster, unconnected drift apart (engram behaviour)
   const P = notes.map((n,i)=>{ const a=i*2.399963, r=40+16*Math.sqrt(i); return {x:W/2+r*Math.cos(a), y:H*0.44+r*Math.sin(a)}; });
