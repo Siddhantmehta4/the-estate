@@ -205,7 +205,7 @@ body.room-salon{
 .salon:not(.wine) .salonHead .who{color:#FFE7C2;text-shadow:0 0 30px rgba(255,150,50,.4)}
 
 /* the empty-room invitation — it burns */
-.salon .emptyRoom{ font-size:18px; font-weight:400; }
+.salon .emptyRoom{ font-size:15.5px; font-weight:400; opacity:.72; }
 .salon:not(.wine) .emptyRoom{
   color:#FFCE8A;
   background:linear-gradient(100deg, #F0913A 20%, #FFE7B8 50%, #F0913A 80%);
@@ -240,7 +240,7 @@ body.room-salon{
 
 /* footer: a proper bar, not floating words */
 .salonFoot{
-  display:flex !important; gap:0 !important; margin-top:16px !important;
+  display:flex !important; gap:0 !important; margin-top:16px !important; margin-bottom:22px;
   border:1px solid rgba(255,150,50,.28); border-radius:12px; overflow:hidden;
   background:rgba(0,0,0,.24);
 }
@@ -250,6 +250,40 @@ body.room-salon{
 .salon.wine .salonFoot .ghost{ color:#DFA0AC; }
 .salon.wine .salonFoot .ghost:first-child{ border-right-color:rgba(200,110,120,.25); }
 
+/* the line that brought you here — fades once the argument has legs */
+.salonNote{
+  font-family:var(--serif); font-style:italic; font-size:13.5px; line-height:1.55;
+  text-align:center; margin:0 10px 22px; padding:0 4px;
+}
+.salon:not(.wine) .salonNote{ color:rgba(255,206,150,.5); }
+.salon.wine .salonNote{ color:rgba(230,170,180,.5); }
+
+/* whisky: it goes up in smoke */
+.smokeFade{ animation: smokeAway 2.6s ease-in forwards; animation-delay:0s; }
+.turn ~ .smokeFade, .transcript .turn + .smokeFade{ }
+@keyframes smokeAway{
+  0%{ opacity:.5; transform:translateY(0) scale(1); filter:blur(0); }
+  100%{ opacity:.5; transform:translateY(0) scale(1); filter:blur(0); }
+}
+/* wine: the room turns, and it slips your mind */
+@keyframes wineForget{
+  0%{ opacity:.5; transform:rotate(0) scale(1); filter:blur(0); }
+  100%{ opacity:.5; transform:rotate(0) scale(1); filter:blur(0); }
+}
+.salonNote.leaving.smokeFade{ animation: smokeReal 2.4s ease-in forwards; }
+@keyframes smokeReal{
+  0%{ opacity:.5; transform:translateY(0) scale(1) skewX(0); filter:blur(0); }
+  40%{ opacity:.35; transform:translateY(-14px) scale(1.03) skewX(2deg); filter:blur(2px); }
+  100%{ opacity:0; transform:translateY(-52px) scale(1.12) skewX(-3deg); filter:blur(9px); }
+}
+.salonNote.leaving.wineFade{ animation: wineReal 2.8s ease-in-out forwards; }
+@keyframes wineReal{
+  0%{ opacity:.5; transform:rotate(0) translateX(0) scale(1); filter:blur(0); }
+  45%{ opacity:.3; transform:rotate(-1.5deg) translateX(6px) scale(1.02); filter:blur(3px); }
+  100%{ opacity:0; transform:rotate(2deg) translateX(-10px) scale(.96); filter:blur(8px); }
+}
+
+  
 /* ---- WINE — deeper, redder ---- */
 body.room-salon.wine{
   background:
@@ -639,14 +673,18 @@ async function captureAction(action){
   if(action==="save"){ await saveNote(n); harvestTags(n); if(ta) ta.value=""; toast("kept — it's in the library"); return; }
   if(action==="resolve"){ await runClarify(n); return; }
   if(action==="debate"){
-    S.loading=true; S.error=""; render();
-    try{
-      const r = await apiJSON(clarifyPrompt(n.text, relevantSealed(n)), 1600);
+    await saveNote(n);
+    enterSalon(n);
+    // the house finds the author while you're still deciding what to say
+    apiJSON(clarifyPrompt(n.text, relevantSealed(n)), 1600).then(async r=>{
       n.source = (r.source && r.source.title) ? r.source : null;
       n.clarify=r.clarify||""; n.footnote=r.footnote||""; n.footing=n.source?n.source.footing:null;
+      if(n.debate && !n.debate.transcript.length && n.source && n.source.author && n.source.footing!=="unknown") n.debate.mode="author";
       await saveNote(n);
-      S.loading=false; enterSalon(n); return;
-    }catch(e){ S.error=friendly(e); S.loading=false; render(); return; }
+      if(S.view==="salon" && S.note && S.note.id===n.id) render();
+      harvestTags(n);
+    }).catch(()=>{});
+    return;
   }
 }
 function enterSalon(n){
@@ -685,6 +723,10 @@ async function sendSalon(){
     n.debate.transcript.push({role:"them", content:raw});
     
     await saveNote(n);
+    if(n.debate.transcript.filter(m=>m.role==="me").length===3){
+      const el=document.querySelector(".salonNote");
+      if(el){ el.classList.add("leaving"); await new Promise(r=>setTimeout(r,2500)); }
+    }
   }catch(e){
     n.debate.transcript.push({role:"them", content:"(the fire dipped — say that again)"});
     toast(friendly(e));
@@ -1055,7 +1097,8 @@ function renderSalon(){
       <button class="${n.debate.learn?"on":""}" onclick="setSalonMode(true)">🍷</button>
     </div>
     <div class="transcript">
-     ${T.length===0?`<p class="emptyRoom">${n.debate.learn?"ask anything… no question is too small here":"Start the debate… Fire away… "}</p>`:""}
+      ${T.length<3?`<div class="salonNote ${n.debate.learn?"wineFade":"smokeFade"}">“${esc(n.text)}”</div>`:""}
+      ${T.length===0?`<p class="emptyRoom">${n.debate.learn?"ask anything… no question is too small here":"Start the debate… Fire away… "}</p>`:""}
       ${rows}
       ${S.salonBusy?`<div class="turn them heat0"><div class="speaker">${author?esc(n.source.author||"The author"):(n.debate.learn?"Learning partner":"Debate partner")} <span class="ln"></span></div><p style="opacity:.55">…</p></div>`:""}
     </div>
