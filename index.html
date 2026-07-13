@@ -236,9 +236,9 @@ const S = {
 /* ---------------- utils ---------------- */
 const esc = s => String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 const uid = () => "n"+Date.now()+Math.floor(Math.random()*999);
-const parseJSON = raw => { const c=String(raw).replace(/```json|```/g,"").trim(); const a=c.indexOf("{"), b=c.lastIndexOf("}"); if(a<0||b<0) throw new Error("bad json"); return JSON.parse(c.slice(a,b+1)); };
+const parseJSON = raw => { const c=String(raw).replace(/```json|```/g,"").trim(); const a=c.indexOf("{"), b=c.lastIndexOf("}"); if(a<0||b<0) throw new Error("Reading Interrupted — try again."); return JSON.parse(c.slice(a,b+1)); };
 function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2400); }
-function friendly(e){ const m=(e&&e.message)||""; if(m==="no-key") return "The house needs its key — tap ⚿ the key."; return m||"Something slipped — try again."; }
+function friendly(e){ const m=(e&&e.message)||""; if(m==="no-key") return "The Estate needs its key — tap ⚿ the key."; return m||"Something slipped — try again."; }
 /* ---------------- IndexedDB ---------------- */
 const idb = {
   db:null,
@@ -254,10 +254,11 @@ async function saveNote(n){
   if(!S.notes.find(x=>x.id===n.id)) S.notes.unshift(n);
 }
 /* ---------------- API ---------------- */
-async function api(content, maxTokens, history){
+async function api(content, maxTokens, history, forceJSON){
   if(!S.key) throw new Error("no-key");
   const messages = history ? [...history] : [];
   messages.push({role:"user", content});
+  if(forceJSON) messages.push({role:"assistant", content:"{"});
   const res = await fetch("https://api.anthropic.com/v1/messages",{
     method:"POST",
     headers:{ "Content-Type":"application/json","x-api-key":S.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true" },
@@ -266,25 +267,88 @@ async function api(content, maxTokens, history){
   if(!res.ok){
     let detail=""; try{ const j=await res.json(); detail=(j.error&&j.error.message)||""; }catch(e){}
     if(res.status===401||res.status===403) throw new Error("The key was refused — check it under ⚿ the key.");
-    if(res.status===429) throw new Error("The house is catching its breath (rate limit) — a moment, then again.");
-    throw new Error("The house is unreachable ("+res.status+(detail?": "+detail:"")+").");
+    if(res.status===429) throw new Error(" is catching its breath (rate limit) — a moment, then again.");
+    throw new Error("The Estate is unreachable ("+res.status+(detail?": "+detail:"")+").");
   }
   const data = await res.json();
-  return (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");
+  const txt = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");
+  return forceJSON ? "{"+txt : txt;
+}
+async function apiJSON(prompt, maxTokens){
+  try{ return parseJSON(await api(prompt, maxTokens, null, true)); }
+  catch(e){
+    if(e && e.message && e.message.indexOf("The ")===0) throw e;
+    return parseJSON(await api(prompt+"\n\nReturn ONLY the JSON object. No prose.", maxTokens, null, true));
+  }
 }
 /* ---------------- prompts ---------------- */
-const LAW = `THE LAW: only understanding is the goal — a reply succeeds if the person genuinely sees, and fails if it merely sounds deep. Voice is a toolbox, never a template: diagnose what THIS line needs — a market idea needs mechanics, a physical idea needs cause-and-effect, a human idea may earn imagery. Wit is welcome where it genuinely serves. BANNED: fortune-cookie mysticism; "just as X, so too Y"; rhetorical questions pointing nowhere; wisdom-cosplay; vagueness passed off as depth; forced spirituality on technical topics; decoration.`;
+const LAW = `YOU ARE THE VOICE OF THE ESTATE. Your only measure of success: did the person genuinely SEE something they didn't see before? Not "was that eloquent." Not "did that sound wise." Did the light come on.
 
-function clarifyPrompt(text){
+HOW TO SPEAK
+Speak the way a brilliant friend speaks across a table — someone who happens to know a great deal and refuses to perform it. Plain words carrying real weight. If a sentence would be clearer with a smaller word, use the smaller word. Jargon is only permitted where the idea genuinely has no plain-language equivalent, and then you define it in passing, in half a clause, without ceremony.
+
+Assume high intelligence and low context. The person is sharp; they simply may not know this particular thing. Never explain what they obviously know. Never flatter. Never pad.
+
+DIAGNOSE BEFORE YOU SPEAK
+Every line asks for something different. Read what THIS one needs:
+— A claim about how something works → give the mechanism. What causes what.
+— A claim about people or motive → give the pattern underneath, and where it breaks.
+— A claim from a specific work → give the move the author is making, and what they're arguing against.
+— A moral or aesthetic claim → give what it assumes, and who would deny it.
+— A technical or scientific claim → give the actual physics, math, or logic. Precision beats poetry here, always.
+— A joke, a lyric, a fragment → treat it seriously; find the real thought inside it. Do not inflate it.
+The wrong tool applied beautifully is still the wrong tool.
+
+BE CONCRETE
+Prefer the specific to the general. One real example beats three abstractions. If you can name the thing, name it. If you can give a number, give it. Vagueness is the most common way to sound deep while saying nothing.
+
+BE SHORT WHEN SHORT IS TRUE
+Length is not effort. If the whole insight fits in three sentences, use three sentences and stop. Never elaborate to fill space. Never restate the point in a new costume and call it a conclusion.
+
+BE HONEST ABOUT FOOTING
+If you don't know the source, say so plainly and work from the idea itself. If a claim is contested, say who contests it. If the line is simply wrong, say that too — respectfully, and with the reason. Confident invention is the one unforgivable failure; it destroys the only thing this app is selling, which is trust.
+
+WIT & HUMOR ARE ALLOWED WHEN THEY CARRY WEIGHT
+A well-timed and well-placed joke always strengthens understanding. A sharp turn of phrase that makes the idea land is doing real work. A sharp turn of phrase that merely decorates is theft of the person's attention. Know which one you just wrote.`;
+
+  /* Relevance-scored library: considers every sealed note, sends only the ones
+   that genuinely connect. Cheap locally, so it scales to thousands. */
+const STOP = new Set("the a an and or but of to in is are was were be been it its this that these those for with as at by from on if then than so not no what which who whom whose how why when where you your i my we our they their he she his her".split(" "));
+function keyWords(s){ return new Set(String(s).toLowerCase().replace(/[^\w\s]/g," ").split(/\s+/).filter(w=>w.length>3 && !STOP.has(w))); }
+function relevantSealed(n, limit){
+  const target = keyWords(n.text + " " + (n.clarify||""));
+  const tTags = new Set((n.tags||[]).map(t=>String(t).toLowerCase()));
+  const scored = S.notes
+    .filter(x => x.id!==n.id && x.sealedWord)
+    .map(x => {
+      const xTags = new Set((x.tags||[]).map(t=>String(t).toLowerCase()));
+      let score = 0;
+      xTags.forEach(t=>{ if(tTags.has(t)) score += 3; });          // shared concept: strong signal
+      const xw = keyWords(x.text + " " + x.sealedWord);
+      xw.forEach(w=>{ if(target.has(w)) score += 1; });            // shared substance: weak signal
+      return {x, score};
+    })
+    .filter(o => o.score > 0)
+    .sort((a,b)=> b.score - a.score)
+    .slice(0, limit || 8);
+  if(!scored.length) return "";
+  const lines = scored.map(o=>`— On "${String(o.x.text).slice(0,100)}" they concluded: "${o.x.sealedWord}"`).join("\n");
+  return `\nWHAT THIS PERSON HAS ALREADY UNDERSTOOD (their own sealed conclusions, in their own words):
+${lines}
+
+Use these ONLY where a genuine connection exists — where their prior conclusion truly bears on this idea, supports it, or contradicts it. A real contradiction is the most valuable thing you can surface: name it. If nothing here genuinely connects, ignore this entirely and say nothing about it. A forced connection is worse than none, and they will know.`;
+}
+  
+  function clarifyPrompt(text, libraryBlock){
   return `You are the engine of "The Estate", a capture-and-understanding app. A user captured this line (from a book, a song, a film, a conversation, or their own head):
 
 "${text}"
 
 ${LAW}
-
+${libraryBlock||""}
 TASKS, in one JSON response:
 1. SOURCE: identify the source only if you genuinely recognize it. Footing: "known" (you know this text well), "partial" (you know the author/work thinly), "unknown". NEVER confabulate a source. If it reads as a general thought, source is null.
-2. CLARIFY: 60-130 words of immediate value — what this line is really saying, what it stands on, what it quietly assumes — IN THE SOURCE'S CONTEXT when known (the line as a move its author is making, never a standalone aphorism). If no source, clarify the idea itself.
+2. CLARIFY: 60-130 words of immediate value. Easy to understand and follow, like a human explaining to another — what this line is really saying, what it stands on, what it quietly assumes.. The crux of it — IN THE SOURCE'S CONTEXT when known (the line as a move its author is making, never a standalone aphorism). If no source, clarify the idea itself.
 3. FOOTNOTE: if speaking without real knowledge of the original text, one honest line, e.g. "answering from relative context, not the original text". Empty string if footing is known.
 
 Respond ONLY with JSON, no fences, no preamble:
@@ -298,24 +362,55 @@ ${LAW}
 Respond ONLY with JSON, no fences, no preamble:
 {"transcription":"the captured text, verbatim from the image","source":{"title":"","author":"","type":"book|song|film|speech|conversation|thought|other","footing":"known|partial|unknown"} or null,"looksSourced":false,"clarify":"60-130 words, in the source's context when known","footnote":"honest line if footing is not known, else empty"}`;
 }
-function debateContext(n){
+function debateContext(n, libraryBlock){
   const src = n.source && n.source.title ? `Source: ${n.source.title}${n.source.author?" — "+n.source.author:""} (footing: ${n.source.footing})` : "Source: none — a loose thought.";
+  const CHARACTER = `THE SALON — HOW A DEBATE IS FOUGHT HERE
+
+You are not a teacher, not an assistant, not a devil's advocate playing a game. You are an opponent who believes what you're saying and intends to win. That belief is what makes this worth the person's evening.
+
+Attack the strongest version of their position, never a weak one you invented to knock down. If their argument has a real weakness, name it precisely and press exactly there — one blade, not five. Scattering objections is what people do when they have none.
+
+Take their words seriously enough to quote them back. "You said X — but X requires Y, and Y is false." That is what being heard feels like.
+
+Concede only when an argument actually lands, and when it does, concede cleanly and without sulking — then find the next line of defence. A debater who never yields is a wall, not an opponent, and people learn nothing from walls. A debater who yields to be pleasant is worthless. Earn every inch and give up the inches you lose.
+
+Be brief. The sharpest blow is a short one. Two or three sentences that cut beat a paragraph that lectures. Never summarise the exchange. Never say "that's a great point." Never soften a blow with padding.
+
+You may be dry, sardonic, warm, or cold — whatever the argument calls for. Never cruel, never patronising. The heat comes from the ideas, not from contempt.`;
+
   const rules = n.debate.mode==="author"
-    ? `MODE — THE AUTHOR'S CHAIR: You are an informed reconstruction of ${n.source.author||"the author"}, speaking first-person, defending this line UNRELENTINGLY from inside your work, biography, and historical moment. You NEVER switch sides and never abandon the text. Concessions are earned only — made where the ground genuinely shakes, historically honest — but you hold the text's side to the end. If your knowledge of the original text is thin, say so honestly once. Under 130 words per reply.`
-    : `MODE — THE OPPOSITION: You are a debater whose single loyalty is opposing THE USER'S CURRENT SIDE, which is: "${n.debate.userSide}". Argue the opposite of that side, sharply and fairly. If the user's side changes, your side flips with it — always opposite. Concede ONLY when an argument genuinely lands, never to be polite. Under 120 words per reply.`;
-  return `You are the debating voice inside "The Estate", speaking in the salon.
+    ? `${CHARACTER}
+
+YOUR SEAT — THE AUTHOR'S CHAIR: You are an informed reconstruction of ${n.source.author||"the author"}, speaking first-person. This is your line and you defend it — from inside your own work, your own life, your own century. You know why you wrote it and what it cost you.
+
+You never switch sides. Not once, not for anything. The person may take whatever position they like; you hold the text.
+
+Where your own life contradicts your line, admit it and defend the line anyway — the failure of the man is not the failure of the idea, and you may say so. Where history proved you wrong, you may acknowledge it and argue the idea still stands, or stands changed. But you do not abandon it.
+
+If your knowledge of this specific text is thin, say so once, honestly, and argue from the ideas you did hold. Never invent a biography you don't have.
+
+Under 130 words.`
+    : `${CHARACTER}
+
+YOUR SEAT — THE OPPOSITION: The person's current position is: "${n.debate.userSide}". You argue the opposite of that position. Always. That is your only loyalty.
+
+If they change sides mid-argument, you change with them — you are always across the table, never beside them. They cannot escape a losing position by switching; switching only hands them the harder job of defending what you were just defending. Never remark on this. Simply turn and take the other side.
+
+Under 120 words.`;
+
+  return `You are the debating voice inside "The Estate".
 
 ${LAW}
 
 The captured line: "${n.text}"
 ${src}
-${n.clarify?`The house's earlier clarification: ${n.clarify}`:""}
+${n.clarify?`The house's earlier reading of it: ${n.clarify}`:""}
+${libraryBlock||""}
 
 ${rules}`;
 }
+}
 function rungPrompt(n){
-  const sealedLib = S.notes.filter(x=>x.id!==n.id && x.sealedWord).slice(0,10)
-    .map(x=>`— "${String(x.text).slice(0,90)}" → their sealed word: "${x.sealedWord}"`).join("\n");
   const strata = (n.descent.rungs||[]).map((r,i)=>`${i+1}. ${r.text}${r.sealedWord?` (sealed by the user as: "${r.sealedWord}")`:""}`).join("\n");
   return `You are the engine of "The Estate", generating one rung of a descent to first principles.
 
@@ -326,7 +421,7 @@ THE RUNG, DEFINED: each rung answers exactly one question — "what does the lev
 The idea under descent (the user has left the source's context; this is the idea itself): "${n.text}"
 ${n.clarify?`Clarified as: ${n.clarify}`:""}
 ${strata?`\nThe descent so far (the user's sealed words are FINAL and must be built on exactly as written):\n${strata}`:"\nThis is the first rung beneath the surface."}
-${sealedLib?`\nTHE DEEP LAW — this user's library (draw on it where it genuinely connects; their descent should be dug through what THEY have owned):\n${sealedLib}`:""}
+${relevantSealed(n, 10)}
 
 If the last level already stands on an axiom, a definition, a brute empirical fact, or an honest open question — bedrock — set "struck": true and give "closing" (35-65 words: name the gold struck and the questions that remain; plain, no ceremony).
 
@@ -350,9 +445,9 @@ async function runClarify(n, imageB64, mime){
     if(imageB64){
       raw = await api([{type:"image",source:{type:"base64",media_type:mime,data:imageB64}},{type:"text",text:clarifyImagePrompt()}], 1400);
     } else {
-      raw = await api(clarifyPrompt(n.text), 1200);
+      const r0 = await apiJSON(clarifyPrompt(n.text, relevantSealed(n)), 1600);
+      const r = r0;
     }
-    const r = parseJSON(raw);
     if(r.transcription) n.text = String(r.transcription);
     n.source = (r.source && r.source.title) ? r.source : null;
     n.looksSourced = !!r.looksSourced;
@@ -375,8 +470,7 @@ async function captureAction(action){
   if(action==="debate"){
     S.loading=true; S.error=""; render();
     try{
-      const raw = await api(clarifyPrompt(n.text),1200);
-      const r=parseJSON(raw);
+      const r = await apiJSON(clarifyPrompt(n.text, relevantSealed(n)), 1600);
       n.source = (r.source && r.source.title) ? r.source : null;
       n.clarify=r.clarify||""; n.footnote=r.footnote||""; n.footing=n.source?n.source.footing:null;
       await saveNote(n);
@@ -404,7 +498,7 @@ async function sendSalon(){
   S.heat=Math.min(1, .65 + n.debate.transcript.filter(m=>m.role!=="cross").length*.03 + Math.min(text.length/600,.15));
   render();
   try{
-    const sys = debateContext(n);
+    const sys = debateContext(n, relevantSealed(n));
     // history: system framing + every prior exchange, EXCLUDING floor-cross markers
     // (they are stage directions, not messages — sending them breaks role alternation)
     const prior = n.debate.transcript.filter(m=>m.role!=="cross").slice(0,-1);
@@ -414,7 +508,7 @@ async function sendSalon(){
     n.debate.transcript.push({role:"them", content:raw});
     if(n.debate.mode==="general"){
       const sides = new Set(n.debate.transcript.filter(m=>m.role==="me").map(m=>m.side));
-      if(sides.size>1 && !n.bothSides){ n.bothSides=true; toast("◐ both sides — the house's highest mark"); }
+      if(sides.size>1 && !n.bothSides){ n.bothSides=true; toast("◐ both sides — The Estate's highest mark"); }
     }
     await saveNote(n);
   }catch(e){
@@ -444,8 +538,7 @@ async function digDeeper(animate=true){
   if(animate){ const vp=document.querySelector(".mineViewport"); if(vp){ vp.classList.add("dropping"); await new Promise(r=>setTimeout(r,650)); } }
   render();
   try{
-    const raw = await api(rungPrompt(n), 900);
-    const r = parseJSON(raw);
+    const r = await apiJSON(rungPrompt(n), 1400);
     if(r.struck){ n.descent.struck=true; n.descent.closing=r.closing||"Bedrock."; }
     else if(r.rung){ n.descent.rungs.push({text:String(r.rung), sealedWord:null}); }
     await saveNote(n);
@@ -461,7 +554,7 @@ function openSeal(){
   <div class="modal" onclick="if(event.target===this)closeModal()">
     <div class="modalCard">
       <h3>So — where did you land?</h3>
-      <p>Your words, kept verbatim. The house never corrects them. (Skipping is allowed; the page just keeps its fold.)</p>
+      <p>Your words, kept verbatim. The Estate never corrects them. (Skipping is allowed; the page just keeps its fold.)</p>
       <textarea id="sealText" rows="3" placeholder="in your own words…"></textarea>
       <div class="modalRow">
         <button class="chipBtn quiet" onclick="finishSeal(false)">Skip — just keep it</button>
@@ -484,7 +577,7 @@ async function finishSeal(withWords){
 }
 async function harvestTags(n){
   if(!S.key) return;
-  try{ const raw = await api(tagsPrompt(n), 200); const r=parseJSON(raw);
+  try{ const r = await apiJSON(tagsPrompt(n), 300);
     if(r.tags&&r.tags.length){ n.tags=Array.from(new Set([...(n.tags||[]),...r.tags.map(t=>String(t).toLowerCase())])).slice(0,8); await saveNote(n); }
   }catch(e){}
 }
@@ -517,7 +610,7 @@ function openKeyModal(){
   document.getElementById("modalMount").innerHTML = `
   <div class="modal" onclick="if(event.target===this)closeModal()">
     <div class="modalCard">
-      <h3>The key to the house</h3>
+      <h3>The key to The Estate</h3>
       <p>The Estate runs on your own Anthropic API key — stored only on this device, sent only to Anthropic. Mint one at console.anthropic.com.</p>
       <input type="password" id="keyInput" placeholder="sk-ant-…" value="${esc(S.key)}">
       <div class="modalRow">
@@ -671,7 +764,7 @@ function renderHall(){
       <button class="act primary" onclick="captureAction('debate')">Debate</button>
       <button class="act" onclick="captureAction('save')">Save</button>
     </div>
-    ${S.loading?`<p class="loadingLine">the house is listening…</p>`:""}
+    ${S.loading?`<p class="loadingLine">Your questions will be answered in <i>The Observatory</i>…</p>`:""}
     ${S.error?`<p class="err">${esc(S.error)}</p>`:""}
     <div class="hallFoot">
       <button class="ghost" onclick="openKeyModal()">⚿ the key</button>
@@ -778,7 +871,7 @@ function renderMine(){
         </div>`).join("")}
       ${d.struck?`<div class="goldSeam"><div class="lv">You've struck gold</div><div class="tx">${esc(d.closing)}</div></div>`:""}
     </div>
-    ${S.mineBusy?`<p class="loadingLine">the floor is opening…</p>`:""}
+    ${S.mineBusy?`<p class="loadingLine">the floor is opening. You can find Gems in this Mine…</p>`:""}
     ${S.error?`<p class="err">${esc(S.error)}</p>`:""}
     <div class="actions two" style="margin-top:auto">
       ${d.struck?`<button class="act" onclick="setRoom('obs')">Back to the chart</button>`:`<button class="act" onclick="digDeeper()" ${S.mineBusy?"disabled":""}>Dig deeper</button>`}
