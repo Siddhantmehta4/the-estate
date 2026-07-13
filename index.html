@@ -258,7 +258,6 @@ async function api(content, maxTokens, history, forceJSON){
   if(!S.key) throw new Error("no-key");
   const messages = history ? [...history] : [];
   messages.push({role:"user", content});
-  if(forceJSON) messages.push({role:"assistant", content:"{"});
   const res = await fetch("https://api.anthropic.com/v1/messages",{
     method:"POST",
     headers:{ "Content-Type":"application/json","x-api-key":S.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true" },
@@ -272,13 +271,14 @@ async function api(content, maxTokens, history, forceJSON){
   }
   const data = await res.json();
   const txt = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");
-  return forceJSON ? "{"+txt : txt;
+  return txt;
 }
 async function apiJSON(prompt, maxTokens){
-  try{ return parseJSON(await api(prompt, maxTokens, null, true)); }
+  const strict = prompt + "\n\nCRITICAL: Respond with ONLY the raw JSON object. Begin your reply with { and end it with }. No preamble, no explanation, no markdown fences.";
+  try{ return parseJSON(await api(strict, maxTokens)); }
   catch(e){
     if(e && e.message && e.message.indexOf("The ")===0) throw e;
-    return parseJSON(await api(prompt+"\n\nReturn ONLY the JSON object. No prose.", maxTokens, null, true));
+    return parseJSON(await api(strict + "\n\nYour previous reply was not valid JSON. Return the JSON object only.", maxTokens));
   }
 }
 /* ---------------- prompts ---------------- */
