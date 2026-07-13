@@ -409,7 +409,6 @@ ${libraryBlock||""}
 
 ${rules}`;
 }
-}
 function rungPrompt(n){
   const strata = (n.descent.rungs||[]).map((r,i)=>`${i+1}. ${r.text}${r.sealedWord?` (sealed by the user as: "${r.sealedWord}")`:""}`).join("\n");
   return `You are the engine of "The Estate", generating one rung of a descent to first principles.
@@ -441,13 +440,14 @@ function newNote(text){
 async function runClarify(n, imageB64, mime){
   S.loading = true; S.error=""; render();
   try{
-    let raw;
+    let r;
     if(imageB64){
-      raw = await api([{type:"image",source:{type:"base64",media_type:mime,data:imageB64}},{type:"text",text:clarifyImagePrompt()}], 1400);
+     const raw = await api([{type:"image",source:{type:"base64",media_type:mime,data:imageB64}},{type:"text",text:clarifyImagePrompt()}], 1400);
+      r = parsejson(raw);
     } else {
-      const r0 = await apiJSON(clarifyPrompt(n.text, relevantSealed(n)), 1600);
-      const r = r0;
+     r = await apiJSON(clarifyPrompt(n.text, relevantSealed(n)), 1600);
     }
+    
     if(r.transcription) n.text = String(r.transcription);
     n.source = (r.source && r.source.title) ? r.source : null;
     n.looksSourced = !!r.looksSourced;
