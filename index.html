@@ -147,55 +147,108 @@ body.room-salon::after{
 }
 body.room-salon.wine::after{ background:radial-gradient(120% 120% at 50% 46%, transparent 60%, rgba(10,6,10,.3) 100%); }
 
-/* ---- WHISKY — a bed of coals, not three lamps ---- */
+/* ---- WHISKY — the room is lit BY the fire ---- */
 body.room-salon{
   background:
-    radial-gradient(150% 60% at 50% 116%, rgba(255,122,26,.30) 0%, rgba(196,60,12,.12) 42%, transparent 70%),
-    radial-gradient(60% 30% at 18% 108%, rgba(255,170,60,.14) 0%, transparent 68%),
-    radial-gradient(60% 30% at 82% 110%, rgba(255,90,20,.12) 0%, transparent 68%),
-    linear-gradient(180deg,#150903 0%, #1D0C05 34%, #2A1006 64%, #3A1607 100%);
-  background-size:100% 100%, 130% 130%, 130% 130%, 100% 100%;
+    radial-gradient(150% 66% at 50% 114%, rgba(255,138,40,.42) 0%, rgba(206,72,16,.20) 40%, transparent 72%),
+    radial-gradient(90% 50% at 50% 40%, rgba(255,150,60,.10) 0%, transparent 70%),
+    radial-gradient(60% 34% at 14% 106%, rgba(255,186,80,.20) 0%, transparent 66%),
+    radial-gradient(60% 34% at 86% 108%, rgba(255,104,26,.18) 0%, transparent 66%),
+    linear-gradient(180deg,#2A1409 0%, #35190A 30%, #45200B 58%, #57290D 82%, #4A210A 100%);
+  background-size:100% 100%, 120% 120%, 130% 130%, 130% 130%, 100% 100%;
   animation: whiskyBreathe 9s ease-in-out infinite;
 }
 @keyframes whiskyBreathe{
-  0%,100%{background-position:50% 100%, 18% 100%, 82% 100%, 0 0; background-size:100% 100%,130% 130%,130% 130%,100% 100%;}
-  50%{background-position:50% 97%, 24% 96%, 76% 104%, 0 0; background-size:100% 106%,138% 136%,124% 128%,100% 100%;}
+  0%,100%{background-position:50% 100%, 50% 40%, 14% 100%, 86% 100%, 0 0;}
+  50%{background-position:50% 96%, 50% 36%, 20% 96%, 80% 104%, 0 0;}
 }
-/* the coalbed: one continuous heat field along the floor */
 .coalbed{
-  position:fixed; left:-10%; right:-10%; bottom:-6%; height:36%; pointer-events:none; z-index:0;
-  filter:blur(34px);
+  position:fixed; left:-10%; right:-10%; bottom:-6%; height:40%; pointer-events:none; z-index:0;
+  filter:blur(32px);
   background:
-    radial-gradient(58% 100% at 30% 100%, rgba(255,150,40,.5) 0%, transparent 72%),
-    radial-gradient(52% 92% at 62% 100%, rgba(255,96,22,.44) 0%, transparent 74%),
-    radial-gradient(44% 84% at 84% 100%, rgba(255,178,70,.32) 0%, transparent 76%),
-    radial-gradient(40% 78% at 12% 100%, rgba(230,70,16,.34) 0%, transparent 76%);
+    radial-gradient(58% 100% at 30% 100%, rgba(255,164,52,.68) 0%, transparent 72%),
+    radial-gradient(52% 92% at 62% 100%, rgba(255,104,26,.6) 0%, transparent 74%),
+    radial-gradient(44% 84% at 86% 100%, rgba(255,192,86,.46) 0%, transparent 76%),
+    radial-gradient(40% 78% at 10% 100%, rgba(238,78,18,.5) 0%, transparent 76%);
   background-size:180% 130%, 160% 120%, 150% 120%, 150% 120%;
   animation: coalDrift 11s ease-in-out infinite;
 }
 @keyframes coalDrift{
-  0%,100%{ background-position:10% 100%, 60% 100%, 88% 100%, 6% 100%; opacity:.86; }
+  0%,100%{ background-position:10% 100%, 60% 100%, 88% 100%, 6% 100%; opacity:.9; }
   33%{ background-position:26% 96%, 46% 102%, 74% 98%, 18% 102%; opacity:1; }
-  66%{ background-position:2% 102%, 72% 96%, 96% 102%, 0% 98%; opacity:.78; }
+  66%{ background-position:2% 102%, 72% 96%, 96% 102%, 0% 98%; opacity:.82; }
 }
-/* heat haze rising off the coals — soft, wide, slow */
 .heatveil{
-  position:fixed; left:0; right:0; bottom:0; height:62%; pointer-events:none; z-index:0;
-  filter:blur(46px); opacity:.5;
+  position:fixed; left:0; right:0; bottom:0; height:76%; pointer-events:none; z-index:0;
+  filter:blur(44px); opacity:.62;
   background:
-    radial-gradient(38% 60% at 24% 108%, rgba(255,132,36,.34) 0%, transparent 70%),
-    radial-gradient(42% 66% at 58% 112%, rgba(255,104,26,.3) 0%, transparent 72%),
-    radial-gradient(34% 56% at 84% 108%, rgba(255,160,54,.26) 0%, transparent 70%);
+    radial-gradient(38% 62% at 24% 108%, rgba(255,146,44,.42) 0%, transparent 70%),
+    radial-gradient(42% 70% at 58% 112%, rgba(255,112,28,.38) 0%, transparent 72%),
+    radial-gradient(34% 58% at 86% 108%, rgba(255,176,60,.34) 0%, transparent 70%);
   background-size:140% 150%, 150% 160%, 130% 140%;
   animation: veilRise 14s ease-in-out infinite;
 }
 @keyframes veilRise{
   0%,100%{ background-position:20% 100%, 56% 100%, 86% 100%; transform:translateY(0) scaleY(1); }
-  50%{ background-position:30% 88%, 48% 84%, 74% 90%; transform:translateY(-2%) scaleY(1.06); }
+  50%{ background-position:30% 86%, 48% 82%, 74% 88%; transform:translateY(-3%) scaleY(1.08); }
 }
+.salon:not(.wine) .turn p{ color:#FFE0B8; }
+.salon:not(.wine) .heat0 p{color:#FFF0D8}.salon:not(.wine) .heat1 p{color:#FBD9A8}.salon:not(.wine) .heat2 p{color:#EFBF86}.salon:not(.wine) .heat3 p{color:#D9A26C}.salon:not(.wine) .heat4 p{color:#BC8657}
 .salon:not(.wine) .turn:last-child p{ animation: emberText 4.2s ease-in-out infinite; }
-@keyframes emberText{ 0%,100%{text-shadow:0 0 6px rgba(255,132,36,.14);} 50%{text-shadow:0 0 20px rgba(255,132,36,.42);} }
-.salon:not(.wine) .salonHead .rule{ background:linear-gradient(90deg,transparent, rgba(255,130,30,.9), transparent); box-shadow:0 0 14px rgba(255,120,30,.5); }
+@keyframes emberText{ 0%,100%{text-shadow:0 0 8px rgba(255,150,50,.24);} 50%{text-shadow:0 0 24px rgba(255,150,50,.55);} }
+.salon:not(.wine) .turn.me .speaker{color:#FFB44E}
+.salon:not(.wine) .turn.them .speaker{color:#E0975A}
+.salon:not(.wine) .salonHead .rule{ background:linear-gradient(90deg,transparent, rgba(255,150,40,1), transparent); box-shadow:0 0 18px rgba(255,140,40,.7); }
+.salon:not(.wine) .salonInput{border-bottom-color:rgba(255,150,50,.7)}
+.salon:not(.wine) .salonInput::placeholder{color:rgba(255,214,166,.5)}
+.salon:not(.wine) .sendBtn{color:#FFB44E}
+.salon:not(.wine) .salonHead .who{color:#FFE7C2;text-shadow:0 0 30px rgba(255,150,50,.4)}
+
+/* the empty-room invitation — it burns */
+.salon .emptyRoom{ font-size:22px; font-weight:400; }
+.salon:not(.wine) .emptyRoom{
+  color:#FFCE8A;
+  background:linear-gradient(100deg, #F0913A 20%, #FFE7B8 50%, #F0913A 80%);
+  background-size:220% 100%; -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:transparent;
+  filter:drop-shadow(0 0 16px rgba(255,140,40,.5));
+  animation: emberInvite 5s ease-in-out infinite;
+}
+@keyframes emberInvite{ 0%,100%{background-position:0% 0; filter:drop-shadow(0 0 12px rgba(255,140,40,.4));} 50%{background-position:100% 0; filter:drop-shadow(0 0 26px rgba(255,150,50,.75));} }
+.salon.wine .emptyRoom{
+  background:linear-gradient(100deg, #C06070 25%, #FBE4E4 50%, #C06070 75%);
+  background-size:220% 100%; -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:transparent;
+  filter:drop-shadow(0 0 14px rgba(190,90,110,.45));
+  animation: satinInvite 7s ease-in-out infinite;
+}
+@keyframes satinInvite{ 0%,100%{background-position:0% 0} 50%{background-position:100% 0} }
+
+/* ember sparks rising off the bar — whisky's answer to the ripple */
+.spark{ position:absolute; bottom:8px; width:3px; height:3px; border-radius:50%;
+  background:#FFB44E; box-shadow:0 0 8px #FF8A28; pointer-events:none; opacity:0;
+  animation: sparkUp 2.6s ease-out forwards; }
+.spark.s1{ left:34%; animation-delay:0s }
+.spark.s2{ left:50%; width:2px;height:2px; animation-delay:.35s; animation-duration:3.1s }
+.spark.s3{ left:64%; animation-delay:.7s; animation-duration:2.3s }
+@keyframes sparkUp{
+  0%{ opacity:0; transform:translate(0,0) scale(1); }
+  12%{ opacity:1; }
+  60%{ opacity:.8; }
+  100%{ opacity:0; transform:translate(14px,-120px) scale(.4); }
+}
+
+/* footer: a proper bar, not floating words */
+.salonFoot{
+  display:flex !important; gap:0 !important; margin-top:16px !important;
+  border:1px solid rgba(255,150,50,.28); border-radius:12px; overflow:hidden;
+  background:rgba(0,0,0,.24);
+}
+.salonFoot .ghost{ flex:1; padding:13px 8px; font-size:10px; letter-spacing:.2em; color:#E8B478; }
+.salonFoot .ghost:first-child{ border-right:1px solid rgba(255,150,50,.22); }
+.salon.wine .salonFoot{ border-color:rgba(200,110,120,.3); }
+.salon.wine .salonFoot .ghost{ color:#DFA0AC; }
+.salon.wine .salonFoot .ghost:first-child{ border-right-color:rgba(200,110,120,.25); }
 
 /* ---- WINE — deeper, redder ---- */
 body.room-salon.wine{
@@ -1002,19 +1055,19 @@ function renderSalon(){
       <button class="${n.debate.learn?"on":""}" onclick="setSalonMode(true)">🍷</button>
     </div>
     <div class="transcript">
-     ${T.length===0?`<p class="emptyRoom">${n.debate.learn?"ask anything… no question is too small here":"start the debate… Fire away… "}</p>`:""}
+     ${T.length===0?`<p class="emptyRoom">${n.debate.learn?"ask anything… no question is too small here":"Start the debate… Fire away… "}</p>`:""}
       ${rows}
       ${S.salonBusy?`<div class="turn them heat0"><div class="speaker">${author?esc(n.source.author||"The author"):(n.debate.learn?"Learning partner":"Debate partner")} <span class="ln"></span></div><p style="opacity:.55">…</p></div>`:""}
     </div>
     <div class="salonInputRow" style="position:relative">
-      ${n.debate.learn?`<div class="ripple"></div>`:""}
+      ${n.debate.learn?`<div class="ripple"></div>`:`<div class="spark s1"></div><div class="spark s2"></div><div class="spark s3"></div>`}
       <textarea id="salonInput" class="salonInput" rows="1" placeholder="${n.debate.learn?"What is it you wish to understand… ":"Speak your mind freely… "}"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendSalon();}"></textarea>
       <button class="sendBtn" onclick="sendSalon()">Send</button>
     </div>
     <div class="salonFoot">
       <button class="ghost" onclick="openSeal()">Seal &amp; Save</button>
-      <button class="ghost" onclick="setRoom('obs')">Back to the chart</button>
+      <button class="ghost" onclick="setRoom('obs')">Exit the Salon</button>
     </div>
   </div>`;
 }
