@@ -1557,7 +1557,7 @@ function renderSky(){
     ${sel?`<button class="ghost" onclick="openNote('${sel.id}')">open</button><button class="ghost" onclick="S.skySel=null;render()">✕</button>`:""}
   </div>`;
 }
-functifunction skyTap(id, ev){ if(ev) ev.stopPropagation(); S.skySel = (S.skySel===id)?null:id; render(); }
+function skyTap(id, ev){ if(ev) ev.stopPropagation(); S.skySel = (S.skySel===id)?null:id; render(); }
 function skyBgTap(){ if(S.skySel){ S.skySel=null; render(); } }
 function applySkyTransform(){
   const g=document.getElementById("skyG");
