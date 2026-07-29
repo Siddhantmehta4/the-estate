@@ -383,6 +383,82 @@ body.room-salon.wine{
 .roofSil .chimney{position:absolute;bottom:42px;left:50%;margin-left:34px;width:12px;height:26px;background:#070505}
 .roofSil .window{position:absolute;bottom:9px;left:50%;margin-left:-9px;width:18px;height:12px;background:rgba(255,214,120,.7);box-shadow:0 0 16px rgba(255,206,110,.5)}
 .skyCap{text-align:center;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#57504A;padding-bottom:70px}
+/* ================= v2 ADDITIONS ================= */
+/* the pour bar stays with you through a long argument */
+.pourBar{
+  position:sticky; top:0; z-index:24; padding:10px 0 12px; margin:0 -20px; padding-left:20px; padding-right:20px;
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+}
+.pourBar:after{
+  content:""; position:absolute; left:0; right:0; bottom:-16px; height:16px; pointer-events:none;
+  background:linear-gradient(180deg, rgba(0,0,0,.18), transparent);
+}
+.salon:not(.wine) .pourBar{ background:linear-gradient(180deg, rgba(30,14,6,.82), rgba(30,14,6,.45)); }
+.salon.wine .pourBar{ background:linear-gradient(180deg, rgba(48,13,20,.82), rgba(48,13,20,.45)); }
+
+/* the salon bar: two lines visible, grows as you write, never triggers iOS zoom */
+.salonInput{ font-size:16px !important; max-height:150px; overflow-y:auto; line-height:1.5; }
+
+/* the moat, made visible */
+.drewOn{ margin-top:20px; border-top:1px solid rgba(201,169,106,.22); padding-top:12px; }
+.drewOn small{ display:block; font-size:8.5px; letter-spacing:.24em; text-transform:uppercase; color:#7E8C92; margin-bottom:8px; }
+.drewOn button{
+  display:block; width:100%; text-align:left; background:none; border:none; cursor:pointer;
+  font-family:var(--serif); font-style:italic; font-size:13px; line-height:1.5;
+  color:#A9B6BA; padding:6px 0 6px 12px; border-left:1px solid rgba(201,169,106,.3); margin-bottom:6px;
+}
+
+/* library: source filter chip + tappable source rows */
+.filterChip{
+  display:inline-flex; align-items:center; gap:10px; margin:14px 4px 14px;
+  border:1px solid rgba(201,169,106,.4); border-radius:999px; padding:7px 8px 7px 15px;
+  background:rgba(217,164,65,.08);
+}
+.filterChip span{ font-family:var(--serif); font-size:13px; color:#EBD9AE; }
+.filterChip button{ background:none; border:none; color:#B69B72; font-size:14px; cursor:pointer; padding:0 6px; }
+.srcRow.tappable{ cursor:pointer; }
+.srcRow .chev{ color:rgba(201,169,106,.5); font-size:18px; padding-left:4px; }
+
+/* the grate — burned pages, recoverable */
+.grateRow{ border-top:1px solid rgba(201,169,106,.14); padding:11px 0; }
+.grateRow .gt{ font-family:var(--serif); font-style:italic; font-size:13px; color:#B7A992; line-height:1.5; }
+.grateRow .ga{ display:flex; gap:4px; margin-top:4px; }
+.grateRow .ga .ghost{ padding:5px 0; margin-right:14px; font-size:10px; }
+
+/* the sky: depth, drift, and the occasional falling star */
+.nebula{
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(46% 32% at 20% 22%, rgba(58,78,140,.16), transparent 70%),
+    radial-gradient(40% 28% at 80% 58%, rgba(92,58,124,.13), transparent 70%),
+    radial-gradient(30% 22% at 52% 80%, rgba(40,66,110,.10), transparent 72%);
+  animation: nebulaDrift 46s ease-in-out infinite;
+}
+@keyframes nebulaDrift{
+  0%,100%{ transform:translate(0,0) scale(1); opacity:.85; }
+  50%{ transform:translate(2%,-1.6%) scale(1.06); opacity:1; }
+}
+.shootingStar{
+  position:fixed; width:2px; height:2px; border-radius:50%; background:#F2F6FF;
+  box-shadow:0 0 6px #fff, 0 0 16px rgba(190,215,255,.8);
+  opacity:0; pointer-events:none; z-index:0;
+}
+.shootingStar:after{
+  content:""; position:absolute; right:2px; top:50%; width:78px; height:1px; transform:translateY(-50%);
+  background:linear-gradient(90deg, transparent, rgba(214,232,255,.85));
+}
+.ss1{ top:16%; left:-12%; animation: shoot 15s linear infinite 4s; }
+.ss2{ top:8%;  left:-12%; animation: shoot 23s linear infinite 13s; }
+@keyframes shoot{
+  0%{ opacity:0; transform:translate(0,0) rotate(18deg); }
+  2%{ opacity:1; }
+  11%{ opacity:1; transform:translate(58vw,24vh) rotate(18deg); }
+  15%{ opacity:0; transform:translate(74vw,31vh) rotate(18deg); }
+  100%{ opacity:0; transform:translate(74vw,31vh) rotate(18deg); }
+}
+.edgeIn{ animation: edgeDraw .5s ease-out; }
+@keyframes edgeDraw{ from{ opacity:0 } to{ opacity:1 } }
+#skySvg{ touch-action:none; }
 /* ---------------- modals ---------------- */
 .modal{position:fixed;inset:0;background:rgba(10,7,6,.8);display:flex;align-items:center;justify-content:center;z-index:90;padding:22px}
 .modalCard{background:linear-gradient(180deg,#1D1613,#151010);border:1px solid rgba(201,169,106,.35);border-radius:18px;padding:26px 22px;max-width:440px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.6)}
@@ -420,7 +496,7 @@ const S = {
   menuOpen:false, lastWelcome:localStorage.getItem("estate-welcome")||"",
   mineBusy:false, salonBusy:false, heat:0.7,
   skySel:null, skyZoom:1, skyPan:{x:0,y:0},
-  libSeal:"sealed",
+  libSeal:"sealed", libSrcFilter:null,
   hist:[],
 };
 /* ---------------- utils ---------------- */
@@ -429,6 +505,7 @@ const uid = () => "n"+Date.now()+Math.floor(Math.random()*999);
 const parseJSON = raw => { const c=String(raw).replace(/```json|```/g,"").trim(); const a=c.indexOf("{"), b=c.lastIndexOf("}"); if(a<0||b<0) throw new Error("Reading Interrupted — try again."); return JSON.parse(c.slice(a,b+1)); };
 function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2400); }
 function friendly(e){ const m=(e&&e.message)||""; if(m==="no-key") return "The Estate needs its key — tap ⚿ the key."; return m||"Something slipped — try again."; }
+function liveNotes(){ return S.notes.filter(n=>!n.burned); }
 /* ---------------- IndexedDB ---------------- */
 const idb = {
   db:null,
@@ -505,10 +582,11 @@ A well-timed and well-placed joke always strengthens understanding. A sharp turn
    that genuinely connect. Cheap locally, so it scales to thousands. */
 const STOP = new Set("the a an and or but of to in is are was were be been it its this that these those for with as at by from on if then than so not no what which who whom whose how why when where you your i my we our they their he she his her".split(" "));
 function keyWords(s){ return new Set(String(s).toLowerCase().replace(/[^\w\s]/g," ").split(/\s+/).filter(w=>w.length>3 && !STOP.has(w))); }
+let lastDrawnIds = [];
 function relevantSealed(n, limit){
   const target = keyWords(n.text + " " + (n.clarify||""));
   const tTags = new Set((n.tags||[]).map(t=>String(t).toLowerCase()));
-  const scored = S.notes
+  const scored = liveNotes()
     .filter(x => x.id!==n.id && x.sealedWord)
     .map(x => {
       const xTags = new Set((x.tags||[]).map(t=>String(t).toLowerCase()));
@@ -521,6 +599,7 @@ function relevantSealed(n, limit){
     .filter(o => o.score > 0)
     .sort((a,b)=> b.score - a.score)
     .slice(0, limit || 8);
+  lastDrawnIds = scored.map(o=>o.x.id);
   if(!scored.length) return "";
   const lines = scored.map(o=>`— On "${String(o.x.text).slice(0,100)}" they concluded: "${o.x.sealedWord}"`).join("\n");
   return `\nWHAT THIS PERSON HAS ALREADY UNDERSTOOD (their own sealed conclusions, in their own words):
@@ -633,7 +712,15 @@ Respond ONLY with JSON, no fences, no preamble:
 }
 function tagsPrompt(n){
   return `A note in a knowledge app: "${String(n.text).slice(0,200)}"${n.sealedWord?` — user's own sealed understanding: "${n.sealedWord}"`:""}
-Return 2-5 short lowercase concept tags capturing what this note is ABOUT (themes/concepts, not surface words). ONLY JSON, no fences: {"tags":["..."]}`;
+Return 2-4 lowercase tags naming what this note is SPECIFICALLY about.
+
+BE SPECIFIC. The tag must name the actual subject, not the mood or the genre of thought.
+GOOD: eye-contact, deception, cunning, nondualism, music-and-mood, comfort, entropy, habit-formation, status-signalling
+BAD (never use these or anything like them): truth, self, life, meaning, wisdom, power, perception, insight, growth, mind, reality, human-nature, philosophy, knowledge, awareness, existence, purpose
+
+A tag is only useful if it would NOT apply to most other thoughtful notes. If your tag could sit on half a person's library, it is too abstract — go one level more concrete. Prefer a compound noun over a lone abstraction. Two precise tags beat four vague ones.
+
+ONLY JSON, no fences: {"tags":["..."]}`;
 }
 /* ---------------- flows ---------------- */
 function newNote(text){
@@ -643,6 +730,7 @@ function newNote(text){
 }
 async function runClarify(n, imageB64, mime){
   S.loading = true; S.error=""; render();
+  lastDrawnIds = [];
   try{
     let r;
     if(imageB64){
@@ -658,7 +746,8 @@ async function runClarify(n, imageB64, mime){
     n.clarify = r.clarify||"";
     n.footnote = r.footnote||"";
     n.footing = n.source ? n.source.footing : null;
-   await saveNote(n);
+    n.drewOn = lastDrawnIds.slice(0,3);
+    await saveNote(n);
     harvestTags(n);
     S.note = n; setRoom("obs"); S.loading=false; render(); return;
   }catch(e){ S.error = friendly(e); }
@@ -696,6 +785,10 @@ function enterSalon(n){
   n.debate.learn=false;
   S.note=n; setRoom("salon"); S.heat=.7; render();
 }
+function growInput(el){
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,150)+'px';
+}
 function setSalonMode(learn){
   const n=S.note; if(!n||!n.debate||n.debate.learn===learn) return;
   n.debate.learn=learn;
@@ -708,7 +801,7 @@ async function sendSalon(){
   const n=S.note;
   n.debate.transcript.push({role:"me", content:text});
   if(!n.debate.learn && !n.debate.userSide) n.debate.userSide = text;
-  if(inp) inp.value="";
+  if(inp){ inp.value=""; inp.style.height=""; }
   S.salonBusy=true;
   S.heat=Math.min(1, .65 + n.debate.transcript.filter(m=>m.role!=="cross").length*.03 + Math.min(text.length/600,.15));
   render();
@@ -762,10 +855,10 @@ function openSeal(){
   <div class="modal" onclick="if(event.target===this)closeModal()">
     <div class="modalCard">
       <h3>So — where did you land?</h3>
-      <p>Your words, kept verbatim. The Estate never corrects them. (Skipping is allowed; the page just keeps its fold.)</p>
+      <p>Your words, kept verbatim. The Estate never corrects them. Fold it for now and the page keeps its dog-ear — you can seal it any evening.</p>
       <textarea id="sealText" rows="3" placeholder="in your own words…"></textarea>
       <div class="modalRow">
-        <button class="chipBtn quiet" onclick="finishSeal(false)">Skip — just keep it</button>
+        <button class="chipBtn quiet" onclick="finishSeal(false)">Fold for now</button>
         <button class="chipBtn" onclick="finishSeal(true)">Seal it</button>
       </div>
     </div>
@@ -809,7 +902,7 @@ function goBack(){
   setRoom(h.view, true);
 }
 function goHall(){ S.note=null; S.search=null; S.error=""; S.hist=[]; setRoom("hall", true); }
-function goLib(){ S.search=null; S.libTab="notes"; S.error=""; setRoom("lib"); }
+function goLib(){ S.search=null; S.libTab="notes"; S.libSrcFilter=null; S.error=""; setRoom("lib"); }
 function openNote(id){
   const n=S.notes.find(x=>x.id===id); if(!n) return;
   S.note=n; S.search=null; setRoom("obs");
@@ -907,7 +1000,7 @@ function topBar(name, mid){
 }
 function searchMatches(q){
   q=q.toLowerCase();
-  return S.notes.filter(n=>
+  return liveNotes().filter(n=>
     (n.text||"").toLowerCase().includes(q) ||
     (n.sealedWord||"").toLowerCase().includes(q) ||
     (n.source&&((n.source.title||"")+" "+(n.source.author||"")).toLowerCase().includes(q)) ||
@@ -950,7 +1043,7 @@ function fxFor(view){
     <div class="mineGlow" style="height:${34+Math.min(depth*7,26)}vh"></div>`;
   }
   if(view==="lib"||view==="unresolved") return `<div class="lampPool"></div>`;
-  if(view==="sky") return `<div class="roofSil"><div class="gable"></div><div class="house"></div><div class="chimney"></div><div class="window"></div></div>`;
+  if(view==="sky") return `<div class="nebula"></div><div class="shootingStar ss1"></div><div class="shootingStar ss2"></div><div class="roofSil"><div class="gable"></div><div class="house"></div><div class="chimney"></div><div class="window"></div></div>`;
   return "";
 }
 
@@ -960,7 +1053,7 @@ function askDelete(id){
   <div class="modal" onclick="if(event.target===this)closeModal()">
     <div class="modalCard">
       <h3>Burn this page?</h3>
-      <p>“${esc(String(n.text).slice(0,90))}${String(n.text).length>90?"…":""}”<br><br>Gone from the library, the sky, and every future descent. There is no ash to sift.</p>
+      <p>“${esc(String(n.text).slice(0,90))}${String(n.text).length>90?"…":""}”<br><br>Out of the library, the sky, and every future descent. The ash sits in the grate a while — you can pull it back from the Library if you change your mind.</p>
       <div class="modalRow">
         <button class="chipBtn quiet" onclick="closeModal()">Keep it</button>
         <button class="chipBtn" onclick="doDelete('${id}')">Burn it</button>
@@ -969,14 +1062,41 @@ function askDelete(id){
   </div>`;
 }
 async function doDelete(id){
-  S.notes = S.notes.filter(x=>x.id!==id);
+  const n=S.notes.find(x=>x.id===id);
+  if(n){ n.burned=Date.now(); try{ await idb.put(JSON.parse(JSON.stringify(n))); }catch(e){} }
   if(S.note && S.note.id===id) S.note=null;
   if(S.skySel===id) S.skySel=null;
-  try{ await new Promise(res=>{ const t=idb.db.transaction("notes","readwrite"); t.objectStore("notes").delete(id); t.oncomplete=res; t.onerror=res; }); }catch(e){}
-  closeModal(); toast("burned"); goLib();
+  closeModal(); toast("burned — still in the grate"); goLib();
 }
-
-  /* the mine's atmosphere follows where you are, not how deep you've been */
+function openBurned(){
+  const b=S.notes.filter(n=>n.burned).sort((x,y)=>(y.burned||0)-(x.burned||0));
+  document.getElementById("modalMount").innerHTML=`
+  <div class="modal" onclick="if(event.target===this)closeModal()">
+    <div class="modalCard">
+      <h3>The grate</h3>
+      <p>${b.length?"Burned pages rest here until you say otherwise.":"Nothing in the grate. Nothing lost."}</p>
+      ${b.map(n=>`<div class="grateRow">
+        <div class="gt">“${esc(String(n.text).slice(0,70))}${String(n.text).length>70?"…":""}”</div>
+        <div class="ga">
+          <button class="ghost" onclick="restoreNote('${n.id}')">restore</button>
+          <button class="ghost" style="color:#8A5A50" onclick="purgeNote('${n.id}')">for good</button>
+        </div>
+      </div>`).join("")}
+      <div class="modalRow"><button class="chipBtn quiet" onclick="closeModal()">Close</button></div>
+    </div>
+  </div>`;
+}
+async function restoreNote(id){
+  const n=S.notes.find(x=>x.id===id);
+  if(n){ delete n.burned; try{ await idb.put(JSON.parse(JSON.stringify(n))); }catch(e){} }
+  closeModal(); toast("back on the shelf"); render();
+}
+async function purgeNote(id){
+  S.notes = S.notes.filter(x=>x.id!==id);
+  try{ await new Promise(res=>{ const t=idb.db.transaction("notes","readwrite"); t.objectStore("notes").delete(id); t.oncomplete=res; t.onerror=res; }); }catch(e){}
+  openBurned(); toast("gone for good"); 
+}
+/* the mine's atmosphere follows where you are, not how deep you've been */
 function mineScrollWatch(){
   if(S.view!=="mine") return;
   const rows=[...document.querySelectorAll("[data-depth]")];
@@ -994,7 +1114,7 @@ window.addEventListener("scroll", mineScrollWatch, {passive:true});
 /* one-time: tag anything that came in before tagging existed */
 async function backfillTags(){
   if(!S.key) return;
-  const orphans = S.notes.filter(n=>!n.tags || !n.tags.length);
+  const orphans = liveNotes().filter(n=>!n.tags || !n.tags.length);
   if(!orphans.length){ toast("nothing to catch up on"); return; }
   toast("tagging "+orphans.length+" old note"+(orphans.length>1?"s":"")+"…");
   for(const n of orphans){
@@ -1019,7 +1139,8 @@ function render(){
   else if(S.view==="sky") html=renderSky();
   app.innerHTML=html;
   if(S.search!==null) renderSearchResults();
-  if(S.view==="salon") window.scrollTo(0,document.body.scrollHeight);
+  if(S.view==="sky") attachSkyGestures();
+  if(S.view==="salon"){ window.scrollTo(0,document.body.scrollHeight); const si=document.getElementById("salonInput"); if(si) growInput(si); }
 }
 /* ---- HALL ---- */
 function renderHall(){
@@ -1060,6 +1181,7 @@ function renderObservatory(){
     ${n.clarify?`<div class="obsClarify">${esc(n.clarify)}</div>`:(S.loading?"":`<div class="actions one" style="margin-top:8px"><button class="act" onclick="reResolve()">Resolve this line</button></div>`)}
     ${n.footnote?`<div class="footnote">※ ${esc(n.footnote)}</div>`:""}
     ${n.sealedWord?`<div class="sealedBlock"><small>my word</small><div class="inkw">${esc(n.sealedWord)}</div></div>`:""}
+    ${(n.drewOn&&n.drewOn.length)?`<div class="drewOn"><small>this stood on what you already understood</small>${n.drewOn.map(id=>{const d=S.notes.find(x=>x.id===id&&!x.burned); return d?`<button onclick="openNote('${d.id}')">“${esc(String(d.sealedWord||d.text).slice(0,52))}”</button>`:"";}).join("")}</div>`:""}
     ${S.loading?`<p class="loadingLine">the chart is resolving…</p>`:""}
     ${S.error?`<p class="err">${esc(S.error)}</p>`:""}
     <div class="actions" style="margin-top:auto;padding-top:26px">
@@ -1105,10 +1227,12 @@ function renderSalon(){
       <div class="who">Pour yourself a glass.</div>
       <div class="rule"></div>
     </div>
-    <div class="pourLabel">${n.debate.learn?"Wine":"Whiskey"}</div>
-    <div class="libToggle emojiToggle" style="margin:6px auto 0">
-      <button class="${!n.debate.learn?"on":""}" onclick="setSalonMode(false)">🥃</button>
-      <button class="${n.debate.learn?"on":""}" onclick="setSalonMode(true)">🍷</button>
+    <div class="pourBar">
+      <div class="pourLabel">${n.debate.learn?"Wine":"Whiskey"}</div>
+      <div class="libToggle emojiToggle" style="margin:6px auto 0">
+        <button class="${!n.debate.learn?"on":""}" onclick="setSalonMode(false)">🥃</button>
+        <button class="${n.debate.learn?"on":""}" onclick="setSalonMode(true)">🍷</button>
+      </div>
     </div>
     <div class="transcript">
       ${T.filter(m=>m.role==="me").length<3?`<div class="salonNote ${n.debate.learn?"wineFade":"smokeFade"}">“${esc(n.text)}”</div>`:""}
@@ -1118,7 +1242,8 @@ function renderSalon(){
     </div>
     <div class="salonInputRow" style="position:relative">
       ${n.debate.learn?`<div class="ripple"></div>`:`<div class="spark s1"></div><div class="spark s2"></div><div class="spark s3"></div>`}
-      <textarea id="salonInput" class="salonInput" rows="1" placeholder="${n.debate.learn?"What is it you wish to understand… ":"Speak your mind freely… "}"
+      <textarea id="salonInput" class="salonInput" rows="2" placeholder="${n.debate.learn?"What is it you wish to understand… ":"Speak your mind freely… "}"
+        oninput="growInput(this)"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendSalon();}"></textarea>
       <button class="sendBtn" onclick="sendSalon()">Send</button>
     </div>
@@ -1163,8 +1288,13 @@ function renderMine(){
 let srcCache=[];
 function renderLibrary(unresolvedOnly){
   const bg = "#131010";
-  let notes = S.notes.slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  let notes = liveNotes().slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   if(unresolvedOnly) notes = notes.filter(n=>!n.clarify && !n.sealedWord && !(n.debate&&n.debate.transcript.length));
+  const F = S.libSrcFilter;
+  if(F && !unresolvedOnly){
+    notes = F.loose ? notes.filter(n=>!n.source)
+      : notes.filter(n=>n.source && n.source.title===F.title && (n.source.author||"")===F.author);
+  }
   const sealed = notes.filter(n=>n.sealedWord);
   const unsealed = notes.filter(n=>!n.sealedWord);
   const paper = n => `
@@ -1175,10 +1305,11 @@ function renderLibrary(unresolvedOnly){
       ${n.sealedWord?`<div class="inkline"><small>my word</small>${esc(n.sealedWord)}</div>`:""}
     </div>`;
   const srcMap={};
-  S.notes.forEach(n=>{ if(n.source&&n.source.title){ const k=n.source.title+"|"+(n.source.author||"");
+  liveNotes().forEach(n=>{ if(n.source&&n.source.title){ const k=n.source.title+"|"+(n.source.author||"");
     if(!srcMap[k]) srcMap[k]={title:n.source.title,author:n.source.author||"",type:n.source.type||"book",count:0,reading:"finished"};
     srcMap[k].count++; if(n.source.reading==="now") srcMap[k].reading="now"; } });
-  const looseCount=S.notes.filter(n=>!n.source).length;
+  const looseCount=liveNotes().filter(n=>!n.source).length;
+  const burnedCount=S.notes.filter(n=>n.burned).length;
   srcCache=Object.values(srcMap).sort((a,b)=>b.count-a.count);
   return topBar(unresolvedOnly?"Unresolved":"The Library","· pages ·")+`
   <div style="display:flex;flex-direction:column;flex:1">
@@ -1189,35 +1320,49 @@ function renderLibrary(unresolvedOnly){
     ${unresolvedOnly ? (
       notes.length? notes.map(paper).join("") : `<p class="emptyRoom">nothing waiting — every page has had its evening</p>`
     ) : S.libTab==="notes" ? `
-      ${notes.length===0?`<p class="emptyRoom">the library is empty —<br>bring it one for the books</p>`:""}
-      <button onclick="S.libSeal = S.libSeal==='sealed'?'unsealed':'sealed'; render()"
+      ${F?`<div class="filterChip">
+        <span>${F.loose?"Loose notes":esc(F.title)}</span>
+        <button onclick="clearSrcFilter()">✕</button>
+      </div>`:""}
+      ${notes.length===0&&!F?`<p class="emptyRoom">the library is empty —<br>bring it one for the books</p>`:""}
+      ${F?"":`<button onclick="S.libSeal = S.libSeal==='sealed'?'unsealed':'sealed'; render()"
         style="display:flex;align-items:center;gap:7px;background:none;border:none;cursor:pointer;
                font-family:var(--sans);font-size:9.5px;letter-spacing:.3em;text-transform:uppercase;
                color:#C9A96A;margin:14px 4px 12px;padding:6px 0">
         ${S.libSeal==="sealed"?"Sealed":"Unsealed"}
         <span style="font-size:11px;opacity:.75">⇄</span>
-      </button>
-      ${(S.libSeal==="sealed"?sealed:unsealed).length
-        ? (S.libSeal==="sealed"?sealed:unsealed).map(paper).join("")
-        : `<p class="emptyRoom">${S.libSeal==="sealed"?"nothing sealed yet —<br>the ink is waiting":"nothing unsealed —<br>the house is caught up"}</p>`}
+      </button>`}
+      ${F
+        ? (notes.length? notes.map(paper).join("") : `<p class="emptyRoom">nothing here yet</p>`)
+        : ((S.libSeal==="sealed"?sealed:unsealed).length
+            ? (S.libSeal==="sealed"?sealed:unsealed).map(paper).join("")
+            : `<p class="emptyRoom">${S.libSeal==="sealed"?"nothing sealed yet —<br>the ink is waiting":"nothing unsealed —<br>the house is caught up"}</p>`)}
     ` : `
       ${srcCache.length===0&&!looseCount?`<p class="emptyRoom">no sources yet — they arrive with the notes</p>`:""}
       ${srcCache.map((s,i)=>`
-        <div class="srcRow">
+        <div class="srcRow tappable" onclick="filterBySource(${i})">
           <div class="t"><div class="name">${esc(s.title)}</div>
           <div class="meta">${esc(s.author||s.type)} · ${s.count} note${s.count>1?"s":""}</div></div>
-          ${s.type==="book"?`<button class="pill ${s.reading==="now"?"":"off"}" onclick="toggleReadingIdx(${i})">${s.reading==="now"?"reading now":"finished"}</button>`:""}
+          ${s.type==="book"?`<button class="pill ${s.reading==="now"?"":"off"}" onclick="event.stopPropagation();toggleReadingIdx(${i})">${s.reading==="now"?"reading now":"finished"}</button>`:""}
+          <span class="chev">›</span>
         </div>`).join("")}
-      ${looseCount?`<div class="srcRow"><div class="t"><div class="name">Loose notes</div><div class="meta">${looseCount} note${looseCount>1?"s":""} · no fixed address</div></div></div>`:""}
+      ${looseCount?`<div class="srcRow tappable" onclick="filterLoose()"><div class="t"><div class="name">Loose notes</div><div class="meta">${looseCount} note${looseCount>1?"s":""} · no fixed address</div></div><span class="chev">›</span></div>`:""}
     `}
     <div class="libFoot">
       <button class="ghost" onclick="backfillTags()">Catch up the sky</button>
+      ${burnedCount?`<button class="ghost" onclick="openBurned()">The grate (${burnedCount})</button>`:""}
       <button class="ghost" onclick="exportBackup()">Export backup</button>
       <button class="ghost" onclick="document.getElementById('importInput').click()">Import</button>
       <button class="ghost" onclick="openKeyModal()">⚿ key</button>
     </div>
   </div>`;
 }
+function filterBySource(i){
+  const s=srcCache[i]; if(!s) return;
+  S.libSrcFilter={title:s.title,author:s.author}; S.libTab="notes"; setRoom("lib");
+}
+function filterLoose(){ S.libSrcFilter={loose:true}; S.libTab="notes"; setRoom("lib"); }
+function clearSrcFilter(){ S.libSrcFilter=null; S.libTab="sources"; render(); }
 function toggleReadingIdx(i){
   const s=srcCache[i]; if(!s) return;
   const next = s.reading==="now"?"finished":"now";
@@ -1226,22 +1371,41 @@ function toggleReadingIdx(i){
 }
 /* ---- SKY ---- */
 function renderSky(){
-  const notes = S.notes.filter(n=>n.text);
+  const notes = liveNotes().filter(n=>n.text);
   if(!notes.length) return topBar("The Night Sky","· connections ·")+`<p class="emptyRoom">the sky is waiting for its first star</p>`;
   const W=400,H=640;
   const idx = new Map(notes.map((n,i)=>[n.id,i]));
 
- // edges from shared tags AND shared substance — sealed or not
-  const words = notes.map(n=>keyWords(String(n.text)+" "+(n.sealedWord||"")+" "+(n.clarify||"")));
-  const E=[];
+  // ---- edges: exclusivity-weighted, capped, so the sky stays legible ----
+  // a tag only two notes share is a real signal; a tag half the library carries is noise.
+  // exclusivity is size-independent: an exclusive pair links whether you have 5 notes or 500.
+  const tagsOf = notes.map(n=>Array.from(new Set((n.tags||[]).map(t=>String(t).toLowerCase()))));
+  const words  = notes.map(n=>keyWords(String(n.text)+" "+(n.sealedWord||"")));
+  const tagDF={}, wordDF={};
+  tagsOf.forEach(ts=>ts.forEach(t=>tagDF[t]=(tagDF[t]||0)+1));
+  words.forEach(ws=>ws.forEach(w=>wordDF[w]=(wordDF[w]||0)+1));
+  const NN=Math.max(notes.length,2);
+  const ubiquitous = df => df > Math.max(3, NN*0.4);   // carried by too much of the library to mean anything
+  const excl = df => ubiquitous(df) ? 0 : 2/Math.max(df,2);
+  const cand=[];
   for(let i=0;i<notes.length;i++) for(let j=i+1;j<notes.length;j++){
-    const A=(notes[i].tags||[]).map(t=>String(t).toLowerCase());
-    const B=(notes[j].tags||[]).map(t=>String(t).toLowerCase());
-    const tagHits = A.filter(t=>B.includes(t)).length;
-    let wordHits = 0;
-    words[i].forEach(w=>{ if(words[j].has(w)) wordHits++; });
-    const score = tagHits*3 + wordHits;
-    if(score >= 3) E.push({a:i,b:j,w:Math.min(Math.ceil(score/3),3),tension:!!(notes[i].bothSides||notes[j].bothSides)});
+    let score=0; const why=[];
+    tagsOf[i].forEach(t=>{
+      if(!tagsOf[j].includes(t)) return;
+      const w=excl(tagDF[t]);
+      if(w>0){ score += w*3; why.push(t); }
+    });
+    words[i].forEach(w=>{ if(words[j].has(w)) score += excl(wordDF[w])*0.5; });
+    if(score>=2.0) cand.push({a:i,b:j,score,why});
+  }
+  cand.sort((x,y)=>y.score-x.score);
+  const deg=new Array(notes.length).fill(0);
+  const E=[];
+  for(const c of cand){
+    if(deg[c.a]>=3 || deg[c.b]>=3) continue;      // each star keeps only its strongest few
+    deg[c.a]++; deg[c.b]++;
+    E.push({a:c.a,b:c.b,w:Math.min(Math.ceil(c.score/2.2),3),
+            tension:!!(notes[c.a].bothSides||notes[c.b].bothSides), why:c.why});
   }
   // force-directed relaxation — connected notes cluster, unconnected drift apart (engram behaviour)
   const P = notes.map((n,i)=>{ const a=i*2.399963, r=40+16*Math.sqrt(i); return {x:W/2+r*Math.cos(a), y:H*0.44+r*Math.sin(a)}; });
@@ -1275,6 +1439,7 @@ function renderSky(){
   const taken=[];
   const free=(x,y,w)=>!taken.some(t=>Math.abs(t.x-x)<(t.w+w)/2+4 && Math.abs(t.y-y)<11);
   const label = (n,i)=>{
+    if(sel && i!==selI && !near.has(i)) return "";
     const t=String(n.sealedWord||n.text).slice(0,16);
     const txt=esc(t)+(String(n.sealedWord||n.text).length>16?"…":"");
     const w=t.length*4.6;
@@ -1293,10 +1458,9 @@ function renderSky(){
     <svg viewBox="0 0 ${W} ${H}" id="skySvg" style="touch-action:none">
       <g id="skyG" transform="translate(${S.skyPan.x},${S.skyPan.y}) scale(${S.skyZoom})">
       ${Array.from({length:30},(_,i)=>{const x=(i*137)%W,y=(i*211)%(H-140)+10;return `<circle cx="${x}" cy="${y}" r="${(i%3)*0.3+0.6}" fill="#39404E"/>`;}).join("")}
-      ${E.map(e=>{
-        const dim = sel && !(e.a===selI||e.b===selI);
+      ${(sel ? E.filter(e=>e.a===selI||e.b===selI) : []).map(e=>{
         const col = e.tension ? "157,139,212" : "231,206,150";
-        return `<line x1="${P[e.a].x}" y1="${P[e.a].y}" x2="${P[e.b].x}" y2="${P[e.b].y}" stroke="rgba(${col},${dim?0.09:0.45})" stroke-width="${Math.min(e.w,3)*0.8}" ${e.tension?'stroke-dasharray="2 5"':""}/>`;
+        return `<line x1="${P[e.a].x}" y1="${P[e.a].y}" x2="${P[e.b].x}" y2="${P[e.b].y}" stroke="rgba(${col},.55)" stroke-width="${Math.min(e.w,3)*0.8}" ${e.tension?'stroke-dasharray="2 5"':""} class="edgeIn"/>`;
       }).join("")}
       ${notes.map((n,i)=>{
         const dim = sel && i!==selI && !near.has(i);
@@ -1310,19 +1474,61 @@ function renderSky(){
       </g>
     </svg>
   </div>
-  <div class="skyCap" style="display:flex;gap:8px;justify-content:center;align-items:center;padding-bottom:70px">
-    <button class="ghost" onclick="skyZoom(-1)">–</button>
-    <span>${sel?esc(String(sel.sealedWord||sel.text).slice(0,30)):"tap a star"}</span>
-    <button class="ghost" onclick="skyZoom(1)">+</button>
+  <div class="skyCap" style="display:flex;gap:10px;justify-content:center;align-items:center;padding-bottom:70px">
+    <span>${sel?esc(String(sel.sealedWord||sel.text).slice(0,28)):"tap a star · pinch to zoom"}</span>
     ${sel?`<button class="ghost" onclick="openNote('${sel.id}')">open</button><button class="ghost" onclick="S.skySel=null;render()">✕</button>`:""}
   </div>`;
 }
 function skyTap(id){ S.skySel = (S.skySel===id)?null:id; render(); }
-function skyZoom(dir){
-  const z = Math.max(0.6, Math.min(3, S.skyZoom * (dir>0?1.35:1/1.35)));
-  const cx=200, cy=320;
-  S.skyPan = { x: cx - (cx - S.skyPan.x) * (z/S.skyZoom), y: cy - (cy - S.skyPan.y) * (z/S.skyZoom) };
-  S.skyZoom = z; render();
+function applySkyTransform(){
+  const g=document.getElementById("skyG");
+  if(g) g.setAttribute("transform",`translate(${S.skyPan.x},${S.skyPan.y}) scale(${S.skyZoom})`);
+}
+/* pinch to zoom, drag to pan — the sky handles like a photo */
+function attachSkyGestures(){
+  const svg=document.getElementById("skySvg"); if(!svg || svg.dataset.wired) return;
+  svg.dataset.wired="1";
+  let mode=null, d0=0, z0=1, pan0=null, mid0=null, t0=null, moved=false;
+  const P=t=>({x:t.clientX,y:t.clientY});
+  const box=()=>svg.getBoundingClientRect();
+  svg.addEventListener("touchstart",e=>{
+    moved=false;
+    if(e.touches.length===2){
+      mode="pinch";
+      const a=P(e.touches[0]), b=P(e.touches[1]);
+      d0=Math.hypot(a.x-b.x,a.y-b.y)||1; z0=S.skyZoom; pan0={...S.skyPan};
+      mid0={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+      e.preventDefault();
+    } else if(e.touches.length===1){
+      mode="pan"; t0=P(e.touches[0]); pan0={...S.skyPan};
+    }
+  },{passive:false});
+  svg.addEventListener("touchmove",e=>{
+    const r=box();
+    if(mode==="pinch" && e.touches.length===2){
+      const a=P(e.touches[0]), b=P(e.touches[1]);
+      const z=Math.max(0.5,Math.min(5, z0*(Math.hypot(a.x-b.x,a.y-b.y)/d0)));
+      const sx=(mid0.x-r.left)/r.width*400, sy=(mid0.y-r.top)/r.height*640;
+      S.skyPan={ x: sx-(sx-pan0.x)*(z/z0), y: sy-(sy-pan0.y)*(z/z0) };
+      S.skyZoom=z; moved=true; applySkyTransform(); e.preventDefault();
+    } else if(mode==="pan" && e.touches.length===1){
+      const p=P(e.touches[0]);
+      const dx=(p.x-t0.x)/r.width*400, dy=(p.y-t0.y)/r.height*640;
+      if(Math.abs(dx)>3||Math.abs(dy)>3){
+        moved=true;
+        S.skyPan={x:pan0.x+dx, y:pan0.y+dy};
+        applySkyTransform(); e.preventDefault();
+      }
+    }
+  },{passive:false});
+  svg.addEventListener("touchend",()=>{ mode=null; });
+  // double-tap resets the view
+  let lastTap=0;
+  svg.addEventListener("click",()=>{
+    const t=Date.now();
+    if(t-lastTap<300 && !moved){ S.skyZoom=1; S.skyPan={x:0,y:0}; applySkyTransform(); }
+    lastTap=t;
+  });
 }
 /* ---------------- boot ---------------- */
 (async function boot(){
