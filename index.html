@@ -385,17 +385,18 @@ body.room-salon.wine{
 .skyCap{text-align:center;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#57504A;padding-bottom:70px}
 /* ================= v2 ADDITIONS ================= */
 /* the pour bar stays with you through a long argument */
-.pourBar{
-  position:sticky; top:0; z-index:24; padding:10px 0 12px; margin:0 -20px; padding-left:20px; padding-right:20px;
-  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+.salonSticky{
+  position:sticky; top:0; z-index:30; margin:0 -20px 10px; padding:calc(6px + env(safe-area-inset-top)) 20px 12px;
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
 }
-.pourBar:after{
+.salonSticky:after{
   content:""; position:absolute; left:0; right:0; bottom:-16px; height:16px; pointer-events:none;
   background:linear-gradient(180deg, rgba(0,0,0,.18), transparent);
 }
-.salon:not(.wine) .pourBar{ background:linear-gradient(180deg, rgba(30,14,6,.82), rgba(30,14,6,.45)); }
-.salon.wine .pourBar{ background:linear-gradient(180deg, rgba(48,13,20,.82), rgba(48,13,20,.45)); }
-
+.salon:not(.wine) .salonSticky{ background:linear-gradient(180deg, rgba(30,14,6,.94), rgba(30,14,6,.72)); }
+.salon.wine .salonSticky{ background:linear-gradient(180deg, rgba(48,13,20,.94), rgba(48,13,20,.72)); }
+.salonSticky .topRow{ margin-bottom:6px; }
+.salonSticky .salonHead{ margin:0 0 2px; }
 /* the salon bar: two lines visible, grows as you write, never triggers iOS zoom */
 .salonInput{ font-size:16px !important; max-height:150px; overflow-y:auto; line-height:1.5; }
 
@@ -425,39 +426,51 @@ body.room-salon.wine{
 .grateRow .ga{ display:flex; gap:4px; margin-top:4px; }
 .grateRow .ga .ghost{ padding:5px 0; margin-right:14px; font-size:10px; }
 
-/* the sky: depth, drift, and the occasional falling star */
-.nebula{
-  position:fixed; inset:0; pointer-events:none; z-index:0;
-  background:
-    radial-gradient(46% 32% at 20% 22%, rgba(58,78,140,.16), transparent 70%),
-    radial-gradient(40% 28% at 80% 58%, rgba(92,58,124,.13), transparent 70%),
-    radial-gradient(30% 22% at 52% 80%, rgba(40,66,110,.10), transparent 72%);
-  animation: nebulaDrift 46s ease-in-out infinite;
-}
-@keyframes nebulaDrift{
-  0%,100%{ transform:translate(0,0) scale(1); opacity:.85; }
-  50%{ transform:translate(2%,-1.6%) scale(1.06); opacity:1; }
-}
+/* the sky: layered dust, asynchronous stars, and a true shooting star */
+.nebula{ position:fixed; inset:0; pointer-events:none; z-index:0; }
+.nebula .dust{ position:absolute; inset:-20%; filter:blur(38px); }
+.dust.d1{ background:radial-gradient(38% 26% at 24% 18%, rgba(58,78,140,.16), transparent 70%); animation:driftA 64s linear infinite; }
+.dust.d2{ background:radial-gradient(32% 22% at 78% 54%, rgba(92,58,124,.13), transparent 70%); animation:driftB 88s linear infinite; }
+.dust.d3{ background:radial-gradient(26% 18% at 48% 78%, rgba(40,66,110,.11), transparent 72%); animation:driftC 102s linear infinite; }
+@keyframes driftA{ 0%{transform:translate(0,0) rotate(0)} 50%{transform:translate(4%,-3%) rotate(4deg)} 100%{transform:translate(0,0) rotate(0)} }
+@keyframes driftB{ 0%{transform:translate(0,0) rotate(0)} 50%{transform:translate(-5%,2%) rotate(-3deg)} 100%{transform:translate(0,0) rotate(0)} }
+@keyframes driftC{ 0%{transform:translate(0,0)} 50%{transform:translate(3%,3%)} 100%{transform:translate(0,0)} }
+
+.bgTwinkle{ animation: bgTwinkle 1 ease-in-out; animation-fill-mode:forwards; }
+@keyframes bgTwinkle{ 0%,100%{opacity:.5} 50%{opacity:1} }
+
+/* one true shooting star, spawned randomly by JS — never the same path twice */
 .shootingStar{
-  position:fixed; width:2px; height:2px; border-radius:50%; background:#F2F6FF;
-  box-shadow:0 0 6px #fff, 0 0 16px rgba(190,215,255,.8);
-  opacity:0; pointer-events:none; z-index:0;
+  position:fixed; width:2.4px; height:2.4px; border-radius:50%;
+  background:radial-gradient(circle, #FFFFFF 0%, #CFE0FF 55%, transparent 100%);
+  box-shadow:0 0 6px #fff, 0 0 14px rgba(190,215,255,.7);
+  pointer-events:none; z-index:0;
+  animation-name:shootRand; animation-timing-function:ease-in; animation-fill-mode:forwards;
 }
-.shootingStar:after{
-  content:""; position:absolute; right:2px; top:50%; width:78px; height:1px; transform:translateY(-50%);
-  background:linear-gradient(90deg, transparent, rgba(214,232,255,.85));
+.shootingStar:before{
+  content:""; position:absolute; right:1px; top:50%; height:1px;
+  width:var(--len,70px); transform:translateY(-50%) rotate(180deg); transform-origin:right center;
+  background:linear-gradient(90deg, rgba(214,232,255,.9), transparent);
 }
-.ss1{ top:16%; left:-12%; animation: shoot 15s linear infinite 4s; }
-.ss2{ top:8%;  left:-12%; animation: shoot 23s linear infinite 13s; }
-@keyframes shoot{
-  0%{ opacity:0; transform:translate(0,0) rotate(18deg); }
-  2%{ opacity:1; }
-  11%{ opacity:1; transform:translate(58vw,24vh) rotate(18deg); }
-  15%{ opacity:0; transform:translate(74vw,31vh) rotate(18deg); }
-  100%{ opacity:0; transform:translate(74vw,31vh) rotate(18deg); }
+@keyframes shootRand{
+  0%{ opacity:0; transform:translate(0,0) rotate(var(--ang,20deg)); }
+  4%{ opacity:1; }
+  70%{ opacity:.9; transform:translate(var(--dx,60vw),var(--dy,26vh)) rotate(var(--ang,20deg)); }
+  100%{ opacity:0; transform:translate(var(--dx2,74vw),var(--dy2,32vh)) rotate(var(--ang,20deg)); }
 }
-.edgeIn{ animation: edgeDraw .5s ease-out; }
-@keyframes edgeDraw{ from{ opacity:0 } to{ opacity:1 } }
+
+/* the view beyond the estate — hillside, city, ocean */
+.vista{ position:fixed; left:0; right:0; bottom:0; height:38vh; pointer-events:none; z-index:1; }
+.vista .hillFade{ position:absolute; inset:0; background:linear-gradient(180deg, transparent 0%, rgba(9,10,16,.55) 40%, rgba(6,7,11,.92) 100%); }
+.vista svg{ position:absolute; left:0; right:0; bottom:0; width:100%; height:100%; }
+.citySign{
+  position:fixed; left:16px; bottom:calc(18px + env(safe-area-inset-bottom)); z-index:2; pointer-events:none;
+  font-family:'Inter',monospace; font-size:8.5px; letter-spacing:.12em; line-height:1.5;
+  color:#7CFF9E; background:#0A130D; border:2px solid #1B2E1E; padding:6px 9px; border-radius:2px;
+  text-shadow:0 0 4px rgba(124,255,158,.6); box-shadow:0 0 10px rgba(0,0,0,.5), inset 0 0 6px rgba(124,255,158,.08);
+  image-rendering:pixelated;
+}
+.citySign b{ display:block; color:#B8FFC9; font-size:9px; letter-spacing:.16em; margin-bottom:2px; }
 #skySvg{ touch-action:none; }
 /* ---------------- modals ---------------- */
 .modal{position:fixed;inset:0;background:rgba(10,7,6,.8);display:flex;align-items:center;justify-content:center;z-index:90;padding:22px}
@@ -714,11 +727,12 @@ function tagsPrompt(n){
   return `A note in a knowledge app: "${String(n.text).slice(0,200)}"${n.sealedWord?` — user's own sealed understanding: "${n.sealedWord}"`:""}
 Return 2-4 lowercase tags naming what this note is SPECIFICALLY about.
 
-BE SPECIFIC. The tag must name the actual subject, not the mood or the genre of thought.
-GOOD: eye-contact, deception, cunning, nondualism, music-and-mood, comfort, entropy, habit-formation, status-signalling
-BAD (never use these or anything like them): truth, self, life, meaning, wisdom, power, perception, insight, growth, mind, reality, human-nature, philosophy, knowledge, awareness, existence, purpose
+BE SPECIFIC. The tag must name the actual subject — the real thing this note is about — not the genre of thought it belongs to.
+Ask yourself: "would this tag sit comfortably on HALF the notes in a curious person's library?" If yes, it's a genre label, not a subject — go one level more concrete. If the note is genuinely, specifically about that idea itself (an entry on epistemology is genuinely about "knowledge"), the word is fine.
+GOOD: eye-contact, deception, cunning, nondualism, music, comfort, entropy, habit-formation, status-signalling, epistemology
+GENERALLY TOO GENERIC (a genre label, not a subject — used constantly and lazily): truth, self, life, meaning, wisdom, power, insight, growth, mind, reality, existence, purpose — unless the note is unmistakably, narrowly about that exact thing and nothing more specific fits.
 
-A tag is only useful if it would NOT apply to most other thoughtful notes. If your tag could sit on half a person's library, it is too abstract — go one level more concrete. Prefer a compound noun over a lone abstraction. Two precise tags beat four vague ones.
+If your tag could sit on half a person's library, it is too abstract — go one level more concrete. Prefer a compound noun over a lone abstraction. Two precise tags beat four vague ones.
 
 ONLY JSON, no fences: {"tags":["..."]}`;
 }
@@ -899,6 +913,7 @@ function goBack(){
   if(h.noteId){ const n=S.notes.find(x=>x.id===h.noteId); S.note = n||null; if(!n && (h.view==="obs"||h.view==="salon"||h.view==="mine")){ return goBack(); } }
   else S.note=null;
   S.libTab=h.libTab||"notes"; S.libSeal=h.libSeal||"sealed"; S.search=null; S.error="";
+  if(h.libTab==="sources") S.libSrcFilter=null;
   setRoom(h.view, true);
 }
 function goHall(){ S.note=null; S.search=null; S.error=""; S.hist=[]; setRoom("hall", true); }
@@ -1043,7 +1058,40 @@ function fxFor(view){
     <div class="mineGlow" style="height:${34+Math.min(depth*7,26)}vh"></div>`;
   }
   if(view==="lib"||view==="unresolved") return `<div class="lampPool"></div>`;
-  if(view==="sky") return `<div class="nebula"></div><div class="shootingStar ss1"></div><div class="shootingStar ss2"></div><div class="roofSil"><div class="gable"></div><div class="house"></div><div class="chimney"></div><div class="window"></div></div>`;
+ if(view==="sky"){
+    const live=liveNotes();
+    const sealedN=live.filter(n=>n.sealedWord).length, unsealedN=live.length-sealedN;
+    return `<div class="nebula"><div class="dust d1"></div><div class="dust d2"></div><div class="dust d3"></div></div>
+    <div class="vista">
+      <div class="hillFade"></div>
+      <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMax slice">
+        <!-- ocean, far below -->
+        <rect x="0" y="140" width="400" height="120" fill="#0A0E18"/>
+        <rect x="0" y="140" width="400" height="3" fill="rgba(180,200,230,.18)"/>
+        <rect x="0" y="150" width="400" height="1.4" fill="rgba(180,200,230,.10)"/>
+        <!-- the city, a wide low grid of light -->
+        ${Array.from({length:130},(_,i)=>{
+          const x=(i*37)%400, y=118+((i*53)%26);
+          const warm=i%5===0;
+          return `<rect x="${x}" y="${y}" width="${(i%7===0)?2.4:1.3}" height="${(i%7===0)?2.4:1.3}" fill="${warm?'#FFC97A':'#DDE7FF'}" opacity="${0.25+((i*17)%40)/100}"/>`;
+        }).join("")}
+        <!-- two quiet traffic lines -->
+        <rect x="0" y="128" width="18" height="1.4" fill="rgba(255,140,110,.6)"><animate attributeName="x" values="-20;420" dur="9s" repeatCount="indefinite"/></rect>
+        <rect x="0" y="134" width="14" height="1.2" fill="rgba(230,240,255,.5)"><animate attributeName="x" values="420;-20" dur="12s" repeatCount="indefinite"/></rect>
+        <!-- the hillside, close and dark -->
+        <path d="M0,120 Q120,84 220,104 T400,92 L400,260 L0,260 Z" fill="#0D0B10"/>
+        <circle cx="70" cy="104" r="1.4" fill="#FFD9A0" opacity=".6"/>
+        <circle cx="150" cy="92" r="1.2" fill="#FFD9A0" opacity=".45"/>
+        <circle cx="260" cy="98" r="1.3" fill="#FFD9A0" opacity=".5"/>
+        <!-- your estate, closest and darkest -->
+        <polygon points="148,86 200,52 252,86" fill="#070505"/>
+        <rect x="148" y="86" width="104" height="30" fill="#070505"/>
+        <rect x="222" y="62" width="10" height="24" fill="#070505"/>
+        <rect x="191" y="102" width="18" height="12" fill="rgba(255,214,120,.75)"/>
+      </svg>
+    </div>
+    <div class="citySign"><b>THE ESTATE</b>SEALED · ${sealedN}<br>UNSEALED · ${unsealedN}</div>`;
+  }
   return "";
 }
 
@@ -1124,6 +1172,33 @@ async function backfillTags(){
   render();
 }
 
+let skyAmbientTimer=null;
+function spawnShootingStar(){
+  const el=document.createElement("div");
+  el.className="shootingStar";
+  const top=6+Math.random()*22, left=-12+Math.random()*10;
+  const ang=14+Math.random()*12;
+  const dur=(0.55+Math.random()*0.5).toFixed(2);
+  const dx=(48+Math.random()*30).toFixed(0), dy=(18+Math.random()*16).toFixed(0);
+  const dx2=(parseFloat(dx)+16+Math.random()*8).toFixed(0), dy2=(parseFloat(dy)+6+Math.random()*5).toFixed(0);
+  el.style.top=top+"%"; el.style.left=left+"%";
+  el.style.setProperty("--ang", ang+"deg");
+  el.style.setProperty("--dx", dx+"vw"); el.style.setProperty("--dy", dy+"vh");
+  el.style.setProperty("--dx2", dx2+"vw"); el.style.setProperty("--dy2", dy2+"vh");
+  el.style.setProperty("--len", (50+Math.random()*40)+"px");
+  el.style.animationDuration=dur+"s";
+  el.addEventListener("animationend", ()=>el.remove());
+  document.body.appendChild(el);
+}
+function scheduleShootingStar(){
+  if(S.view!=="sky") return;
+  const wait=8000+Math.random()*32000;
+  skyAmbientTimer=setTimeout(()=>{
+    if(S.view==="sky"){ spawnShootingStar(); scheduleShootingStar(); }
+  }, wait);
+}
+function stopSkyAmbient(){ if(skyAmbientTimer){ clearTimeout(skyAmbientTimer); skyAmbientTimer=null; } }
+  
   
 function render(){
   document.body.classList.toggle("wine", !!(S.note && S.note.debate && S.note.debate.learn));
@@ -1139,7 +1214,7 @@ function render(){
   else if(S.view==="sky") html=renderSky();
   app.innerHTML=html;
   if(S.search!==null) renderSearchResults();
-  if(S.view==="sky") attachSkyGestures();
+  if(S.view==="sky"){ attachSkyGestures(); if(!skyAmbientTimer) scheduleShootingStar(); } else stopSkyAmbient();
   if(S.view==="salon"){ window.scrollTo(0,document.body.scrollHeight); const si=document.getElementById("salonInput"); if(si) growInput(si); }
 }
 /* ---- HALL ---- */
@@ -1221,13 +1296,13 @@ function renderSalon(){
       <div class="speaker">${m.role==="me"?"You":(author?esc(n.source.author||"The author"):(n.debate.learn?"Learning partner":"Debate partner"))} <span class="ln"></span></div>
       <p>${esc(m.content)}</p></div>`;
   }).join("");
-  return topBar("The Salon", n.debate.learn?"· learn ·":"· debate ·")+`
-<div class="salon${n.debate.learn?" wine":""}" style="display:flex;flex-direction:column;flex:1">
-<div class="salonHead">
-      <div class="who">Pour yourself a glass.</div>
-      <div class="rule"></div>
-    </div>
-    <div class="pourBar">
+  return `<div class="salon${n.debate.learn?" wine":""}" style="display:flex;flex-direction:column;flex:1">
+    <div class="salonSticky">
+      ${topBar("The Salon", n.debate.learn?"· learn ·":"· debate ·")}
+      <div class="salonHead">
+        <div class="who">Pour yourself a glass.</div>
+        <div class="rule"></div>
+      </div>
       <div class="pourLabel">${n.debate.learn?"Wine":"Whiskey"}</div>
       <div class="libToggle emojiToggle" style="margin:6px auto 0">
         <button class="${!n.debate.learn?"on":""}" onclick="setSalonMode(false)">🥃</button>
@@ -1322,7 +1397,6 @@ function renderLibrary(unresolvedOnly){
     ) : S.libTab==="notes" ? `
       ${F?`<div class="filterChip">
         <span>${F.loose?"Loose notes":esc(F.title)}</span>
-        <button onclick="clearSrcFilter()">✕</button>
       </div>`:""}
       ${notes.length===0&&!F?`<p class="emptyRoom">the library is empty —<br>bring it one for the books</p>`:""}
       ${F?"":`<button onclick="S.libSeal = S.libSeal==='sealed'?'unsealed':'sealed'; render()"
@@ -1356,12 +1430,15 @@ function renderLibrary(unresolvedOnly){
       <button class="ghost" onclick="openKeyModal()">⚿ key</button>
     </div>
   </div>`;
-}
-function filterBySource(i){
+}function filterBySource(i){
   const s=srcCache[i]; if(!s) return;
-  S.libSrcFilter={title:s.title,author:s.author}; S.libTab="notes"; setRoom("lib");
+  S.hist.push({view:"lib", noteId:null, libTab:"sources", libSeal:S.libSeal});
+  S.libSrcFilter={title:s.title,author:s.author}; S.libTab="notes"; setRoom("lib", true);
 }
-function filterLoose(){ S.libSrcFilter={loose:true}; S.libTab="notes"; setRoom("lib"); }
+function filterLoose(){
+  S.hist.push({view:"lib", noteId:null, libTab:"sources", libSeal:S.libSeal});
+  S.libSrcFilter={loose:true}; S.libTab="notes"; setRoom("lib", true);
+}
 function clearSrcFilter(){ S.libSrcFilter=null; S.libTab="sources"; render(); }
 function toggleReadingIdx(i){
   const s=srcCache[i]; if(!s) return;
@@ -1402,7 +1479,7 @@ function renderSky(){
   const deg=new Array(notes.length).fill(0);
   const E=[];
   for(const c of cand){
-    if(deg[c.a]>=3 || deg[c.b]>=3) continue;      // each star keeps only its strongest few
+    if(deg[c.a]>=12 || deg[c.b]>=20) continue;      // generous ceiling — rarity math does the real filtering now
     deg[c.a]++; deg[c.b]++;
     E.push({a:c.a,b:c.b,w:Math.min(Math.ceil(c.score/2.2),3),
             tension:!!(notes[c.a].bothSides||notes[c.b].bothSides), why:c.why});
@@ -1456,15 +1533,16 @@ function renderSky(){
   return topBar("The Night Sky","· connections ·")+`
   <div class="skyWrap">
     <svg viewBox="0 0 ${W} ${H}" id="skySvg" style="touch-action:none">
-      <g id="skyG" transform="translate(${S.skyPan.x},${S.skyPan.y}) scale(${S.skyZoom})">
-      ${Array.from({length:30},(_,i)=>{const x=(i*137)%W,y=(i*211)%(H-140)+10;return `<circle cx="${x}" cy="${y}" r="${(i%3)*0.3+0.6}" fill="#39404E"/>`;}).join("")}
+     <g id="skyG" transform="translate(${S.skyPan.x},${S.skyPan.y}) scale(${S.skyZoom})">
+      <rect x="0" y="0" width="${W}" height="${H}" fill="transparent" onclick="skyBgTap()"/>
+      ${Array.from({length:30},(_,i)=>{const x=(i*137)%W,y=(i*211)%(H-140)+10; const tw=i%4===0; return `<circle cx="${x}" cy="${y}" r="${(i%3)*0.3+0.6}" fill="#39404E" ${tw?`style="animation:bgTwinkle ${3+((i*7)%5)}s ease-in-out ${(i%9)}s infinite"`:""}/>`;}).join("")}
       ${(sel ? E.filter(e=>e.a===selI||e.b===selI) : []).map(e=>{
         const col = e.tension ? "157,139,212" : "231,206,150";
         return `<line x1="${P[e.a].x}" y1="${P[e.a].y}" x2="${P[e.b].x}" y2="${P[e.b].y}" stroke="rgba(${col},.55)" stroke-width="${Math.min(e.w,3)*0.8}" ${e.tension?'stroke-dasharray="2 5"':""} class="edgeIn"/>`;
       }).join("")}
       ${notes.map((n,i)=>{
         const dim = sel && i!==selI && !near.has(i);
-        return `<g onclick="skyTap('${n.id}')" style="cursor:pointer;opacity:${dim?0.3:1}">
+        return `<g onclick="skyTap('${n.id}',event)" style="cursor:pointer;opacity:${dim?0.3:1}">
           ${polaris&&n.id===polaris.id?`<circle cx="${P[i].x}" cy="${P[i].y}" r="10" fill="none" stroke="rgba(231,206,150,.3)"/>`:""}
           ${i===selI?`<circle cx="${P[i].x}" cy="${P[i].y}" r="13" fill="none" stroke="rgba(231,206,150,.6)"/>`:""}
           <circle cx="${P[i].x}" cy="${P[i].y}" r="${n.sealedWord?4.4:2.6}" fill="${n.sealedWord?"#E7CE96":"#8D93A0"}"/>
@@ -1479,7 +1557,8 @@ function renderSky(){
     ${sel?`<button class="ghost" onclick="openNote('${sel.id}')">open</button><button class="ghost" onclick="S.skySel=null;render()">✕</button>`:""}
   </div>`;
 }
-function skyTap(id){ S.skySel = (S.skySel===id)?null:id; render(); }
+functifunction skyTap(id, ev){ if(ev) ev.stopPropagation(); S.skySel = (S.skySel===id)?null:id; render(); }
+function skyBgTap(){ if(S.skySel){ S.skySel=null; render(); } }
 function applySkyTransform(){
   const g=document.getElementById("skyG");
   if(g) g.setAttribute("transform",`translate(${S.skyPan.x},${S.skyPan.y}) scale(${S.skyZoom})`);
