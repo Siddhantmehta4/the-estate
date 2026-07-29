@@ -439,38 +439,11 @@ body.room-salon.wine{
 .bgTwinkle{ animation: bgTwinkle 1 ease-in-out; animation-fill-mode:forwards; }
 @keyframes bgTwinkle{ 0%,100%{opacity:.5} 50%{opacity:1} }
 
-/* one true shooting star, spawned randomly by JS — never the same path twice */
-.shootingStar{
-  position:fixed; width:2.4px; height:2.4px; border-radius:50%;
-  background:radial-gradient(circle, #FFFFFF 0%, #CFE0FF 55%, transparent 100%);
-  box-shadow:0 0 6px #fff, 0 0 14px rgba(190,215,255,.7);
-  pointer-events:none; z-index:0;
-  animation-name:shootRand; animation-timing-function:ease-in; animation-fill-mode:forwards;
-}
-.shootingStar:before{
-  content:""; position:absolute; right:1px; top:50%; height:1px;
-  width:var(--len,70px); transform:translateY(-50%) rotate(180deg); transform-origin:right center;
-  background:linear-gradient(90deg, rgba(214,232,255,.9), transparent);
-}
-@keyframes shootRand{
-  0%{ opacity:0; transform:translate(0,0) rotate(var(--ang,20deg)); }
-  4%{ opacity:1; }
-  70%{ opacity:.9; transform:translate(var(--dx,60vw),var(--dy,26vh)) rotate(var(--ang,20deg)); }
-  100%{ opacity:0; transform:translate(var(--dx2,74vw),var(--dy2,32vh)) rotate(var(--ang,20deg)); }
-}
 
 /* the view beyond the estate — hillside, city, ocean */
 .vista{ position:fixed; left:0; right:0; bottom:0; height:38vh; pointer-events:none; z-index:1; }
 .vista .hillFade{ position:absolute; inset:0; background:linear-gradient(180deg, transparent 0%, rgba(9,10,16,.55) 40%, rgba(6,7,11,.92) 100%); }
 .vista svg{ position:absolute; left:0; right:0; bottom:0; width:100%; height:100%; }
-.citySign{
-  position:fixed; left:16px; bottom:calc(18px + env(safe-area-inset-bottom)); z-index:2; pointer-events:none;
-  font-family:'Inter',monospace; font-size:8.5px; letter-spacing:.12em; line-height:1.5;
-  color:#7CFF9E; background:#0A130D; border:2px solid #1B2E1E; padding:6px 9px; border-radius:2px;
-  text-shadow:0 0 4px rgba(124,255,158,.6); box-shadow:0 0 10px rgba(0,0,0,.5), inset 0 0 6px rgba(124,255,158,.08);
-  image-rendering:pixelated;
-}
-.citySign b{ display:block; color:#B8FFC9; font-size:9px; letter-spacing:.16em; margin-bottom:2px; }
 #skySvg{ touch-action:none; }
 /* ---------------- modals ---------------- */
 .modal{position:fixed;inset:0;background:rgba(10,7,6,.8);display:flex;align-items:center;justify-content:center;z-index:90;padding:22px}
@@ -1059,8 +1032,6 @@ function fxFor(view){
   }
   if(view==="lib"||view==="unresolved") return `<div class="lampPool"></div>`;
  if(view==="sky"){
-    const live=liveNotes();
-    const sealedN=live.filter(n=>n.sealedWord).length, unsealedN=live.length-sealedN;
     return `<div class="nebula"><div class="dust d1"></div><div class="dust d2"></div><div class="dust d3"></div></div>
     <div class="vista">
       <div class="hillFade"></div>
@@ -1089,8 +1060,7 @@ function fxFor(view){
         <rect x="222" y="62" width="10" height="24" fill="#070505"/>
         <rect x="191" y="102" width="18" height="12" fill="rgba(255,214,120,.75)"/>
       </svg>
-    </div>
-    <div class="citySign"><b>THE ESTATE</b>SEALED · ${sealedN}<br>UNSEALED · ${unsealedN}</div>`;
+   </div>`;
   }
   return "";
 }
@@ -1172,32 +1142,6 @@ async function backfillTags(){
   render();
 }
 
-let skyAmbientTimer=null;
-function spawnShootingStar(){
-  const el=document.createElement("div");
-  el.className="shootingStar";
-  const top=6+Math.random()*22, left=-12+Math.random()*10;
-  const ang=14+Math.random()*12;
-  const dur=(0.55+Math.random()*0.5).toFixed(2);
-  const dx=(48+Math.random()*30).toFixed(0), dy=(18+Math.random()*16).toFixed(0);
-  const dx2=(parseFloat(dx)+16+Math.random()*8).toFixed(0), dy2=(parseFloat(dy)+6+Math.random()*5).toFixed(0);
-  el.style.top=top+"%"; el.style.left=left+"%";
-  el.style.setProperty("--ang", ang+"deg");
-  el.style.setProperty("--dx", dx+"vw"); el.style.setProperty("--dy", dy+"vh");
-  el.style.setProperty("--dx2", dx2+"vw"); el.style.setProperty("--dy2", dy2+"vh");
-  el.style.setProperty("--len", (50+Math.random()*40)+"px");
-  el.style.animationDuration=dur+"s";
-  el.addEventListener("animationend", ()=>el.remove());
-  document.body.appendChild(el);
-}
-function scheduleShootingStar(){
-  if(S.view!=="sky") return;
-  const wait=8000+Math.random()*32000;
-  skyAmbientTimer=setTimeout(()=>{
-    if(S.view==="sky"){ spawnShootingStar(); scheduleShootingStar(); }
-  }, wait);
-}
-function stopSkyAmbient(){ if(skyAmbientTimer){ clearTimeout(skyAmbientTimer); skyAmbientTimer=null; } }
   
   
 function render(){
@@ -1214,7 +1158,7 @@ function render(){
   else if(S.view==="sky") html=renderSky();
   app.innerHTML=html;
   if(S.search!==null) renderSearchResults();
-  if(S.view==="sky"){ attachSkyGestures(); if(!skyAmbientTimer) scheduleShootingStar(); } else stopSkyAmbient();
+  if(S.view==="sky"){ attachSkyGestures(); };
   if(S.view==="salon"){ window.scrollTo(0,document.body.scrollHeight); const si=document.getElementById("salonInput"); if(si) growInput(si); }
 }
 /* ---- HALL ---- */
@@ -1545,6 +1489,7 @@ function renderSky(){
         return `<g onclick="skyTap('${n.id}',event)" style="cursor:pointer;opacity:${dim?0.3:1}">
           ${polaris&&n.id===polaris.id?`<circle cx="${P[i].x}" cy="${P[i].y}" r="10" fill="none" stroke="rgba(231,206,150,.3)"/>`:""}
           ${i===selI?`<circle cx="${P[i].x}" cy="${P[i].y}" r="13" fill="none" stroke="rgba(231,206,150,.6)"/>`:""}
+         <circle cx="${P[i].x}" cy="${P[i].y}" r="14" fill="transparent"/>
           <circle cx="${P[i].x}" cy="${P[i].y}" r="${n.sealedWord?4.4:2.6}" fill="${n.sealedWord?"#E7CE96":"#8D93A0"}"/>
           ${label(n,i)}
         </g>`;
@@ -1593,7 +1538,7 @@ function attachSkyGestures(){
     } else if(mode==="pan" && e.touches.length===1){
       const p=P(e.touches[0]);
       const dx=(p.x-t0.x)/r.width*400, dy=(p.y-t0.y)/r.height*640;
-      if(Math.abs(dx)>3||Math.abs(dy)>3){
+      if(Math.abs(dx)>10||Math.abs(dy)>10){
         moved=true;
         S.skyPan={x:pan0.x+dx, y:pan0.y+dy};
         applySkyTransform(); e.preventDefault();
