@@ -54,7 +54,7 @@ body.room-sky{background:linear-gradient(180deg,#0B0E1A 0%, #0C0D16 55%, #100D0C
 .searchBar input::placeholder{color:rgba(240,228,200,.4)}
 .searchBar .x{color:#8A7259;background:none;border:none;font-size:16px;cursor:pointer;padding:0 2px}
 /* ---- the one action-grid law: equal fixtures, always ---- */
-.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;transition:opacity .35s ease}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;transition:opacity 3s ease}
 .actions.waiting{opacity:.35;pointer-events:none}
 .actions.two{grid-template-columns:repeat(2,1fr)}
 .actions.one{grid-template-columns:1fr}
@@ -69,8 +69,9 @@ button.act{font-family:var(--sans)}
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1}}
 .emptyRoom{text-align:center;color:#8F8377;font-family:var(--serif);font-style:italic;font-size:15px;margin-top:60px;line-height:1.7}
 /* ---------------- HALL ---------------- */
-.welcome{margin-top:13vh;text-align:center;font-family:var(--serif);font-weight:450;font-size:26px;color:#F0E4C8;text-shadow:0 0 34px rgba(217,164,65,.32);position:relative;padding:24px 0;background:radial-gradient(380px 150px at 50% 50%, rgba(217,164,65,.24) 0%, transparent 72%)}
-.captureBar{margin-top:30px;border:1px solid rgba(217,164,65,.45);border-radius:16px;background:rgba(0,0,0,.3);padding:16px 16px 12px;box-shadow:0 0 60px rgba(217,164,65,.16), inset 0 1px 0 rgba(255,255,255,.05);transition:border-color 1.6s ease, box-shadow 1.6s ease}
+.welcome{margin-top:13vh;text-align:center;font-family:var(--serif);font-weight:450;font-size:26px;color:#F0E4C8;text-shadow:0 0 34px rgba(217,164,65,.32);position:relative;z-index:1}
+.welcome::before{content:"";position:absolute;left:50%;top:50%;width:520px;height:320px;transform:translate(-50%,-50%);background:radial-gradient(closest-side, rgba(217,164,65,.28) 0%, transparent 100%);z-index:-1;pointer-events:none}
+.captureBar{margin-top:30px;border:1px solid rgba(217,164,65,.45);border-radius:16px;background:rgba(0,0,0,.3);padding:16px 16px 12px;box-shadow:0 0 60px rgba(217,164,65,.16), inset 0 1px 0 rgba(255,255,255,.05);transition:border-color 3s ease, box-shadow 3s ease}
 .captureBar.lit{border-color:rgba(217,164,65,.8);box-shadow:0 0 84px rgba(217,164,65,.26), inset 0 1px 0 rgba(255,255,255,.06)}
 .captureBar textarea{width:100%;background:none;border:none;outline:none;resize:none;font-family:var(--serif);font-style:italic;font-size:17px;line-height:1.5;color:var(--ivory);min-height:56px}
 .captureBar textarea::placeholder{color:rgba(240,228,200,.42)}
