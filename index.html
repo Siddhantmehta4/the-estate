@@ -1458,18 +1458,13 @@ function renderSky(){
     E.push({a:c.a,b:c.b,tier:c.tier,
             tension:!!(notes[c.a].bothSides||notes[c.b].bothSides), why:c.why});
   }
-  // force-directed relaxation — connected notes cluster, unconnected drift apart (engram behaviour)
+  // scatter layout — pure mutual repulsion, deterministic, never depends on edges — every star is always spread and visible
   const P = notes.map((n,i)=>{ const a=i*2.399963, r=40+16*Math.sqrt(i); return {x:W/2+r*Math.cos(a), y:H*0.44+r*Math.sin(a)}; });
   for(let step=0;step<220;step++){
     for(let i=0;i<P.length;i++) for(let j=i+1;j<P.length;j++){
       let dx=P[j].x-P[i].x, dy=P[j].y-P[i].y, d=Math.sqrt(dx*dx+dy*dy)||1;
       const rep=1400/(d*d); dx/=d; dy/=d;
       P[i].x-=dx*rep; P[i].y-=dy*rep; P[j].x+=dx*rep; P[j].y+=dy*rep;
-    }
-    for(const e of E){
-      let dx=P[e.b].x-P[e.a].x, dy=P[e.b].y-P[e.a].y, d=Math.sqrt(dx*dx+dy*dy)||1;
-      const att=(d-70)*0.012*({strong:3, weak:1.6, weakest:0.9}[e.tier]||1); dx/=d; dy/=d;
-      P[e.a].x+=dx*att; P[e.a].y+=dy*att; P[e.b].x-=dx*att; P[e.b].y-=dy*att;
     }
     for(const p of P){ p.x+=(W/2-p.x)*0.004; p.y+=(H*0.44-p.y)*0.004; }
   }
