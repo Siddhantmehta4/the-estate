@@ -501,6 +501,14 @@ const idb = {
   put(note){ return new Promise((res,rej)=>{ if(!idb.db) return res(); const t=idb.db.transaction("notes","readwrite"); t.objectStore("notes").put(note); t.oncomplete=res; t.onerror=()=>rej(t.error); }); },
   all(){ return new Promise((res)=>{ if(!idb.db) return res([]); const r=idb.db.transaction("notes").objectStore("notes").getAll(); r.onsuccess=()=>res(r.result||[]); r.onerror=()=>res([]); }); },
 };
+/* ---------------- tag canonicalization (invisible, on-demand) ---------------- */
+let TAGMAP = JSON.parse(localStorage.getItem("estate-tagmap")||"{}");
+function canonicalTag(t){ t=String(t).toLowerCase().trim(); return TAGMAP[t]||t; }
+function tagVocabulary(limit){
+  const freq={};
+  liveNotes().forEach(n=>(n.tags||[]).forEach(t=>{ t=String(t).toLowerCase(); freq[t]=(freq[t]||0)+1; }));
+  return Object.keys(freq).sort((a,b)=>freq[b]-freq[a]).slice(0,limit||60);
+}
 async function saveNote(n){
   n.updatedAt=Date.now();
   try{ await idb.put(JSON.parse(JSON.stringify(n))); }catch(e){}
@@ -697,15 +705,19 @@ Respond ONLY with JSON, no fences, no preamble:
 {"rung":"70-120 words — what the level above stands on","struck":false,"closing":""}`;
 }
 function tagsPrompt(n){
+ const vocabBlock = (vocab&&vocab.length) ? `
+EXISTING TAGS ALREADY USED IN THIS PERSON'S LIBRARY: ${vocab.join(", ")}
+If one of these already names this note's subject, reuse it EXACTLY as written — same spelling, same hyphenation, no rephrasing. Reuse takes priority over everything below.` : "";
   return `A note in a knowledge app: "${String(n.text).slice(0,200)}"${n.sealedWord?` — user's own sealed understanding: "${n.sealedWord}"`:""}
 Return 2-4 lowercase tags naming what this note is SPECIFICALLY about.
+${vocabBlock}
 
 BE SPECIFIC. The tag must name the actual subject — the real thing this note is about — not the genre of thought it belongs to.
 Ask yourself: "would this tag sit comfortably on HALF the notes in a curious person's library?" If yes, it's a genre label, not a subject — go one level more concrete. If the note is genuinely, specifically about that idea itself (an entry on epistemology is genuinely about "knowledge"), the word is fine.
 GOOD: eye-contact, deception, cunning, nondualism, music, comfort, entropy, habit-formation, status-signalling, epistemology
 GENERALLY TOO GENERIC (a genre label, not a subject — used constantly and lazily): truth, self, life, meaning, wisdom, power, insight, growth, mind, reality, existence, purpose — unless the note is unmistakably, narrowly about that exact thing and nothing more specific fits.
 
-If your tag could sit on half a person's library, it is too abstract — go one level more concrete. Prefer a compound noun over a lone abstraction. Two precise tags beat four vague ones.
+If NONE of the existing tags fit and you must mint a new one: prefer the simplest single word that is still genuinely specific. Reach for a hyphenated compound only when no single word can carry it — compounds fragment a library's vocabulary faster than plain words do. Two precise tags beat four vague ones.
 
 ONLY JSON, no fences: {"tags":["..."]}`;
 }
@@ -865,7 +877,7 @@ async function finishSeal(withWords){
 }
 async function harvestTags(n){
   if(!S.key) return;
-  try{ const r = await apiJSON(tagsPrompt(n), 300);
+  try{ const r = await apiJSON(tagsPrompt(n, tagVocabulary(60)), 300);
     if(r.tags&&r.tags.length){ n.tags=Array.from(new Set([...(n.tags||[]),...r.tags.map(t=>String(t).toLowerCase())])).slice(0,8); await saveNote(n); }
   }catch(e){}
 }
@@ -1129,19 +1141,44 @@ function mineScrollWatch(){
 }
 window.addEventListener("scroll", mineScrollWatch, {passive:true});
 
-/* one-time: tag anything that came in before tagging existed */
-async function backfillTags(){
+/* refresh: tags anything untagged, then re-clusters the whole tag vocabulary into concepts */
+function canonicalizePrompt(tags){
+  return `Here is the full list of distinct tags currently used across one person's personal knowledge library:
+${tags.join(", ")}
+
+Group any tags that represent the SAME underlying concept, even if phrased completely differently (e.g. "music-transcendence", "power-of-music", and "musical-liberation" are all really about "music"). Be generous — if two tags plausibly point at the same idea, group them. Leave a tag out only if it is genuinely a distinct concept from everything else in the list.
+
+For every group of 2 or more tags sharing a concept, pick ONE short canonical label (lowercase, prefer a single plain word) and list every original tag belonging to it. Omit tags that don't share a concept with anything else.
+
+ONLY JSON, no fences: {"groups":[{"canonical":"...", "tags":["...","..."]}]}`;
+}
+async function canonicalizeVocabulary(){
+  const tags = tagVocabulary(300);
+  if(tags.length<2) return;
+  try{
+    const r = await apiJSON(canonicalizePrompt(tags), 1500);
+    const map={};
+    (r.groups||[]).forEach(g=>{
+      const canon=String(g.canonical||"").toLowerCase().trim();
+      if(!canon) return;
+      (g.tags||[]).forEach(t=>{ map[String(t).toLowerCase()]=canon; });
+    });
+    TAGMAP = map;
+    localStorage.setItem("estate-tagmap", JSON.stringify(map));
+  }catch(e){}
+}
+async function refreshSky(){
   if(!S.key) return;
   const orphans = liveNotes().filter(n=>!n.tags || !n.tags.length);
-  if(!orphans.length){ toast("nothing to catch up on"); return; }
-  toast("tagging "+orphans.length+" old note"+(orphans.length>1?"s":"")+"…");
-  for(const n of orphans){
-    try{ await harvestTags(n); }catch(e){}
+  if(orphans.length){
+    toast("tagging "+orphans.length+" note"+(orphans.length>1?"s":"")+"…");
+    for(const n of orphans){ try{ await harvestTags(n); }catch(e){} }
   }
-  toast("the sky is caught up");
+  toast("connecting the sky…");
+  await canonicalizeVocabulary();
+  toast("the sky is refreshed");
   render();
 }
-
   
   
 function render(){
@@ -1367,7 +1404,7 @@ function renderLibrary(unresolvedOnly){
       ${looseCount?`<div class="srcRow tappable" onclick="filterLoose()"><div class="t"><div class="name">Loose notes</div><div class="meta">${looseCount} note${looseCount>1?"s":""} · no fixed address</div></div><span class="chev">›</span></div>`:""}
     `}
     <div class="libFoot">
-      <button class="ghost" onclick="backfillTags()">Catch up the sky</button>
+      <button class="ghost" onclick="refreshSky()">Refresh the sky</button>
       ${burnedCount?`<button class="ghost" onclick="openBurned()">The grate (${burnedCount})</button>`:""}
       <button class="ghost" onclick="exportBackup()">Export backup</button>
       <button class="ghost" onclick="document.getElementById('importInput').click()">Import</button>
@@ -1397,35 +1434,28 @@ function renderSky(){
   const W=400,H=640;
   const idx = new Map(notes.map((n,i)=>[n.id,i]));
 
-  // ---- edges: exclusivity-weighted, capped, so the sky stays legible ----
-  // a tag only two notes share is a real signal; a tag half the library carries is noise.
-  // exclusivity is size-independent: an exclusive pair links whether you have 5 notes or 500.
-  const tagsOf = notes.map(n=>Array.from(new Set((n.tags||[]).map(t=>String(t).toLowerCase()))));
+  // ---- edges: canonical-concept tags + literal keywords, explicit tier rules ----
+  const tagsOf = notes.map(n=>Array.from(new Set((n.tags||[]).map(t=>canonicalTag(t)))));
   const words  = notes.map(n=>keyWords(String(n.text)+" "+(n.sealedWord||"")));
-  const tagDF={}, wordDF={};
-  tagsOf.forEach(ts=>ts.forEach(t=>tagDF[t]=(tagDF[t]||0)+1));
-  words.forEach(ws=>ws.forEach(w=>wordDF[w]=(wordDF[w]||0)+1));
-  const NN=Math.max(notes.length,2);
-  const ubiquitous = df => df > Math.max(3, NN*0.4);   // carried by too much of the library to mean anything
-  const excl = df => ubiquitous(df) ? 0 : 2/Math.max(df,2);
+  const TIER_RANK = {strong:3, weak:2, weakest:1};
   const cand=[];
   for(let i=0;i<notes.length;i++) for(let j=i+1;j<notes.length;j++){
-    let score=0; const why=[];
-    tagsOf[i].forEach(t=>{
-      if(!tagsOf[j].includes(t)) return;
-      const w=excl(tagDF[t]);
-      if(w>0){ score += w*3; why.push(t); }
-    });
-    words[i].forEach(w=>{ if(words[j].has(w)) score += excl(wordDF[w])*0.5; });
-    if(score>=2.0) cand.push({a:i,b:j,score,why});
+    let sharedTags=0, sharedWords=0; const why=[];
+    tagsOf[i].forEach(t=>{ if(tagsOf[j].includes(t)){ sharedTags++; why.push(t); } });
+    words[i].forEach(w=>{ if(words[j].has(w)) sharedWords++; });
+    let tier=null;
+    if(sharedTags>=2) tier="strong";
+    else if(sharedTags===1 || sharedWords>=3) tier="weak";
+    else if(sharedWords===2) tier="weakest";
+    if(tier) cand.push({a:i,b:j,tier,sharedTags,sharedWords,why});
   }
-  cand.sort((x,y)=>y.score-x.score);
+  cand.sort((x,y)=> (TIER_RANK[y.tier]-TIER_RANK[x.tier]) || (y.sharedTags-x.sharedTags) || (y.sharedWords-x.sharedWords));
   const deg=new Array(notes.length).fill(0);
   const E=[];
   for(const c of cand){
-    if(deg[c.a]>=12 || deg[c.b]>=20) continue;      // generous ceiling — rarity math does the real filtering now
+    if(deg[c.a]>=12 || deg[c.b]>=12) continue;      // per-note cap keeps the sky legible; strongest connections win first
     deg[c.a]++; deg[c.b]++;
-    E.push({a:c.a,b:c.b,w:Math.min(Math.ceil(c.score/2.2),3),
+    E.push({a:c.a,b:c.b,tier:c.tier,
             tension:!!(notes[c.a].bothSides||notes[c.b].bothSides), why:c.why});
   }
   // force-directed relaxation — connected notes cluster, unconnected drift apart (engram behaviour)
@@ -1480,9 +1510,10 @@ function renderSky(){
      <g id="skyG" transform="translate(${S.skyPan.x},${S.skyPan.y}) scale(${S.skyZoom})">
       <rect x="0" y="0" width="${W}" height="${H}" fill="transparent" onclick="skyBgTap()"/>
       ${Array.from({length:30},(_,i)=>{const x=(i*137)%W,y=(i*211)%(H-140)+10; const tw=i%4===0; return `<circle cx="${x}" cy="${y}" r="${(i%3)*0.3+0.6}" fill="#39404E" ${tw?`style="animation:bgTwinkle ${3+((i*7)%5)}s ease-in-out ${(i%9)}s infinite"`:""}/>`;}).join("")}
-      ${(sel ? E.filter(e=>e.a===selI||e.b===selI) : []).map(e=>{
-        const col = e.tension ? "157,139,212" : "231,206,150";
-        return `<line x1="${P[e.a].x}" y1="${P[e.a].y}" x2="${P[e.b].x}" y2="${P[e.b].y}" stroke="rgba(${col},.55)" stroke-width="${Math.min(e.w,3)*0.8}" ${e.tension?'stroke-dasharray="2 5"':""} class="edgeIn"/>`;
+     ${(sel ? E.filter(e=>e.a===selI||e.b===selI) : []).map(e=>{
+        const WIDTH = {strong:2.6, weak:1.3, weakest:0.8};
+        const col = e.tension ? "157,139,212" : (e.tier==="weakest" ? "196,201,209" : "231,206,150");
+        return `<line x1="${P[e.a].x}" y1="${P[e.a].y}" x2="${P[e.b].x}" y2="${P[e.b].y}" stroke="rgba(${col},.55)" stroke-width="${WIDTH[e.tier]}" ${e.tension?'stroke-dasharray="2 5"':""} class="edgeIn"/>`;
       }).join("")}
       ${notes.map((n,i)=>{
         const dim = sel && i!==selI && !near.has(i);
