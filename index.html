@@ -54,7 +54,8 @@ body.room-sky{background:linear-gradient(180deg,#0B0E1A 0%, #0C0D16 55%, #100D0C
 .searchBar input::placeholder{color:rgba(240,228,200,.4)}
 .searchBar .x{color:#8A7259;background:none;border:none;font-size:16px;cursor:pointer;padding:0 2px}
 /* ---- the one action-grid law: equal fixtures, always ---- */
-.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;transition:opacity .35s ease}
+.actions.waiting{opacity:.35;pointer-events:none}
 .actions.two{grid-template-columns:repeat(2,1fr)}
 .actions.one{grid-template-columns:1fr}
 .act{display:flex;align-items:center;justify-content:center;height:46px;border-radius:12px;border:1px solid rgba(201,169,106,.3);font-family:var(--sans);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#D8C49A;background:linear-gradient(180deg, rgba(201,169,106,.07), rgba(201,169,106,.02));cursor:pointer}
@@ -68,8 +69,10 @@ button.act{font-family:var(--sans)}
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1}}
 .emptyRoom{text-align:center;color:#8F8377;font-family:var(--serif);font-style:italic;font-size:15px;margin-top:60px;line-height:1.7}
 /* ---------------- HALL ---------------- */
-.welcome{margin-top:13vh;text-align:center;font-family:var(--serif);font-weight:450;font-size:26px;color:#F0E4C8;text-shadow:0 0 34px rgba(217,164,65,.28)}
-.captureBar{margin-top:30px;border:1px solid rgba(217,164,65,.45);border-radius:16px;background:rgba(0,0,0,.3);padding:16px 16px 12px;box-shadow:0 0 60px rgba(217,164,65,.16), inset 0 1px 0 rgba(255,255,255,.05)}
+@keyframes hallWelcomeIn{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+.welcome{margin-top:13vh;text-align:center;font-family:var(--serif);font-weight:450;font-size:26px;color:#F0E4C8;text-shadow:0 0 34px rgba(217,164,65,.28);animation:hallWelcomeIn .6s ease both}
+.captureBar{margin-top:30px;border:1px solid rgba(217,164,65,.45);border-radius:16px;background:rgba(0,0,0,.3);padding:16px 16px 12px;box-shadow:0 0 60px rgba(217,164,65,.16), inset 0 1px 0 rgba(255,255,255,.05);transition:border-color .4s ease, box-shadow .4s ease}
+.captureBar:focus-within{border-color:rgba(217,164,65,.8);box-shadow:0 0 84px rgba(217,164,65,.26), inset 0 1px 0 rgba(255,255,255,.06)}
 .captureBar textarea{width:100%;background:none;border:none;outline:none;resize:none;font-family:var(--serif);font-style:italic;font-size:17px;line-height:1.5;color:var(--ivory);min-height:56px}
 .captureBar textarea::placeholder{color:rgba(240,228,200,.42)}
 .modesRow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
@@ -1196,9 +1199,18 @@ function render(){
   app.innerHTML=html;
   if(S.search!==null) renderSearchResults();
   if(S.view==="sky"){ attachSkyGestures(); };
+  if(S.view==="hall"){ attachHallListeners(); };
   if(S.view==="salon"){ window.scrollTo(0,document.body.scrollHeight); const si=document.getElementById("salonInput"); if(si) growInput(si); }
 }
 /* ---- HALL ---- */
+function attachHallListeners(){
+  const ta=document.getElementById("captureText");
+  const actions=document.querySelector(".hall .actions");
+  if(!ta||!actions) return;
+  const sync=()=> actions.classList.toggle("waiting", !ta.value.trim());
+  ta.addEventListener("input", sync);
+  sync();
+}
 function renderHall(){
   if(!welcomeLine) welcomeLine=pickWelcome();
   return topBar("The Hall","· capture ·")+`
@@ -1212,7 +1224,7 @@ function renderHall(){
         <button class="modeBtn" onclick="voiceHint()"><span class="g">🎙</span> Voice</button>
       </div>
     </div>
-    <div class="actions">
+    <div class="actions waiting">
       <button class="act" onclick="captureAction('resolve')">Resolve</button>
       <button class="act primary" onclick="captureAction('debate')">Engage</button>
       <button class="act" onclick="captureAction('save')">Save</button>
@@ -1436,18 +1448,21 @@ function renderSky(){
 
   // ---- edges: canonical-concept tags + literal keywords, explicit tier rules ----
   const tagsOf = notes.map(n=>Array.from(new Set((n.tags||[]).map(t=>canonicalTag(t)))));
+  const tagWordsOf = notes.map(n=>keyWords((n.tags||[]).join(" ")));
   const words  = notes.map(n=>keyWords(String(n.text)+" "+(n.sealedWord||"")));
   const TIER_RANK = {strong:3, weak:2, weakest:1};
   const cand=[];
   for(let i=0;i<notes.length;i++) for(let j=i+1;j<notes.length;j++){
-    let sharedTags=0, sharedWords=0; const why=[];
+    let sharedTags=0, sharedTagWords=0, sharedWords=0; const why=[];
     tagsOf[i].forEach(t=>{ if(tagsOf[j].includes(t)){ sharedTags++; why.push(t); } });
+    tagWordsOf[i].forEach(w=>{ if(tagWordsOf[j].has(w)) sharedTagWords++; });
     words[i].forEach(w=>{ if(words[j].has(w)) sharedWords++; });
+    const tagSignal = sharedTags + sharedTagWords;   // exact tag match OR shared word inside the tags themselves
     let tier=null;
-    if(sharedTags>=2) tier="strong";
-    else if(sharedTags===1 || sharedWords>=3) tier="weak";
+    if(tagSignal>=2) tier="strong";
+    else if(tagSignal===1 || sharedWords>=3) tier="weak";
     else if(sharedWords===2) tier="weakest";
-    if(tier) cand.push({a:i,b:j,tier,sharedTags,sharedWords,why});
+    if(tier) cand.push({a:i,b:j,tier,sharedTags,sharedTagWords,sharedWords,why});
   }
   cand.sort((x,y)=> (TIER_RANK[y.tier]-TIER_RANK[x.tier]) || (y.sharedTags-x.sharedTags) || (y.sharedWords-x.sharedWords));
   const deg=new Array(notes.length).fill(0);
