@@ -54,8 +54,9 @@ body.room-sky{background:linear-gradient(180deg,#0B0E1A 0%, #0C0D16 55%, #100D0C
 .searchBar input::placeholder{color:rgba(240,228,200,.4)}
 .searchBar .x{color:#8A7259;background:none;border:none;font-size:16px;cursor:pointer;padding:0 2px}
 /* ---- the one action-grid law: equal fixtures, always ---- */
-.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;transition:opacity 3s ease}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;transition:opacity 4s ease}
 .actions.waiting{opacity:.35;pointer-events:none}
+.actions.lit .act{transition:border-color 4s ease, box-shadow 4s ease;border-color:rgba(217,164,65,.75);box-shadow:0 0 22px rgba(217,164,65,.22)}
 .actions.two{grid-template-columns:repeat(2,1fr)}
 .actions.one{grid-template-columns:1fr}
 .act{display:flex;align-items:center;justify-content:center;height:46px;border-radius:12px;border:1px solid rgba(201,169,106,.3);font-family:var(--sans);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#D8C49A;background:linear-gradient(180deg, rgba(201,169,106,.07), rgba(201,169,106,.02));cursor:pointer}
@@ -71,8 +72,26 @@ button.act{font-family:var(--sans)}
 /* ---------------- HALL ---------------- */
 .welcome{margin-top:13vh;text-align:center;font-family:var(--serif);font-weight:450;font-size:26px;color:#F0E4C8;text-shadow:0 0 34px rgba(217,164,65,.32);position:relative;z-index:1}
 .welcome::before{content:"";position:absolute;left:50%;top:50%;width:520px;height:320px;transform:translate(-50%,-50%);background:radial-gradient(closest-side, rgba(217,164,65,.28) 0%, transparent 100%);z-index:-1;pointer-events:none}
-.captureBar{margin-top:30px;border:1px solid rgba(217,164,65,.45);border-radius:16px;background:rgba(0,0,0,.3);padding:16px 16px 12px;box-shadow:0 0 60px rgba(217,164,65,.16), inset 0 1px 0 rgba(255,255,255,.05);transition:border-color 3s ease, box-shadow 3s ease}
-.captureBar.lit{border-color:rgba(217,164,65,.8);box-shadow:0 0 84px rgba(217,164,65,.26), inset 0 1px 0 rgba(255,255,255,.06)}
+.captureBar{position:relative;margin-top:30px;border:1px solid rgba(217,164,65,.45);border-radius:16px;background:rgba(0,0,0,.3);padding:16px 16px 12px;box-shadow:0 0 60px rgba(217,164,65,.16), inset 0 1px 0 rgba(255,255,255,.05);transition:border-color 4s ease, box-shadow 4s ease}
+.captureBar::before{
+  content:"";
+  position:absolute; inset:0;
+  border-radius:inherit;
+  padding:1.5px;
+  background:conic-gradient(from 0deg,
+    transparent 0%, transparent 78%,
+    rgba(214,96,48,0) 80%, rgba(224,120,58,.55) 87%, rgba(255,196,140,.9) 91%, rgba(224,120,58,.55) 95%, rgba(214,96,48,0) 100%);
+  -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;
+  mask-composite:exclude;
+  opacity:0;
+  pointer-events:none;
+  animation:emberOrbit 10s linear infinite paused;
+  transition:opacity 1.5s ease;
+}
+.captureBar.lit::before{ opacity:1; animation-play-state:running; }
+@keyframes emberOrbit{ to{ transform:rotate(360deg); } }
+.captureBar.lit{border-color:rgba(217,164,65,.95);box-shadow:0 0 100px rgba(217,164,65,.4), inset 0 1px 0 rgba(255,255,255,.08)}
 .captureBar textarea{width:100%;background:none;border:none;outline:none;resize:none;font-family:var(--serif);font-style:italic;font-size:17px;line-height:1.5;color:var(--ivory);min-height:56px}
 .captureBar textarea::placeholder{color:rgba(240,228,200,.42)}
 .modesRow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
@@ -1214,6 +1233,7 @@ function attachHallListeners(){
   const sync=()=>{
     const has=!!ta.value.trim();
     actions.classList.toggle("waiting", !has);
+    actions.classList.toggle("lit", has);
     if(bar) bar.classList.toggle("lit", has);
   };
   ta.addEventListener("input", sync);
