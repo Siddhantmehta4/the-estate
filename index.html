@@ -72,22 +72,27 @@ button.act{font-family:var(--sans)}
 /* ---------------- HALL ---------------- */
 .welcome{margin-top:13vh;text-align:center;font-family:var(--serif);font-weight:450;font-size:26px;color:#F0E4C8;text-shadow:0 0 34px rgba(217,164,65,.32);position:relative;z-index:1}
 .welcome::before{content:"";position:absolute;left:50%;top:50%;width:520px;height:320px;transform:translate(-50%,-50%);background:radial-gradient(closest-side, rgba(217,164,65,.28) 0%, transparent 100%);z-index:-1;pointer-events:none}
-.captureBar{position:relative;margin-top:30px;border:1px solid rgba(217,164,65,.45);border-radius:16px;background:rgba(0,0,0,.3);padding:16px 16px 12px;box-shadow:0 0 60px rgba(217,164,65,.16), inset 0 1px 0 rgba(255,255,255,.05);transition:border-color 4s ease, box-shadow 4s ease}
+.captureBar{position:relative;z-index:0;margin-top:30px;border:1px solid rgba(217,164,65,.45);border-radius:16px;background:rgba(0,0,0,.3);padding:16px 16px 12px;box-shadow:0 0 60px rgba(217,164,65,.16), inset 0 1px 0 rgba(255,255,255,.05);transition:border-color 4s ease, box-shadow 4s ease}
 .captureBar::before{
   content:"";
-  position:absolute; inset:0;
-  border-radius:inherit;
-  padding:1.5px;
+  position:absolute; inset:-2px;
+  border-radius:18px;
+  z-index:-2;
   background:conic-gradient(from 0deg,
     transparent 0%, transparent 78%,
     rgba(214,96,48,0) 80%, rgba(224,120,58,.55) 87%, rgba(255,196,140,.9) 91%, rgba(224,120,58,.55) 95%, rgba(214,96,48,0) 100%);
-  -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite:xor;
-  mask-composite:exclude;
   opacity:0;
   pointer-events:none;
-  animation:emberOrbit 10s linear infinite paused;
   transition:opacity 1.5s ease;
+  animation:emberOrbit 10s linear infinite paused;
+}
+.captureBar::after{
+  content:"";
+  position:absolute; inset:1px;
+  border-radius:15px;
+  z-index:-1;
+  background:#17130F;
+  pointer-events:none;
 }
 .captureBar.lit::before{ opacity:1; animation-play-state:running; }
 @keyframes emberOrbit{ to{ transform:rotate(360deg); } }
